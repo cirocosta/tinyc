@@ -46,5 +46,9 @@ clean:
 	find . \( -name "*.o" -o -name "*.a" -o -name "*.out" \) -type f -delete &
 	find . \( -name "callgrind.*" -o -name $(BIN) \) -type f -delete
 
-.PHONY: clean test depend
+fmt:
+	find . -name "*.c" -o -name "*.h" | xargs clang-format -style=file -i
+
+
+.PHONY: clean test depend fmt
 
