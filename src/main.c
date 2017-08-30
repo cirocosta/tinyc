@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <fcntl.h>
+#include <grp.h>
 #include <linux/limits.h>
 #include <sched.h>
 #include <stdio.h>
@@ -19,13 +20,14 @@
 #define STACK_SIZE _TC_MB(1)
 
 typedef struct proc_t {
+	uid_t uid;
 	int argc;
+	int parent_socket;
 	char** argv;
 	char** envp;
 	char* rootfs;
 	char* hostname;
 	char* stack;
-	int parent_socket;
 } tc_proc_t;
 
 typedef struct tc_t {
@@ -92,11 +94,9 @@ tc_handle_child_uid_map(pid_t child_pid, int fd)
 		}
 	}
 
+	_TC_MUST_GO(write(fd, 0, sizeof(int)) == sizeof(int), abort,
+	            "failed writing back response to child");
 
-	if (write(fd, &(int){ 0 }, sizeof(int)) != sizeof(int)) {
-		fprintf(stderr, "couldn't write: %m\n");
-		return -1;
-	}
 	return 0;
 
 abort:
@@ -108,37 +108,35 @@ abort:
 }
 
 int
-tc_set_userns(struct tc_proc_t* config)
+tc_set_userns(tc_proc_t* config)
 {
 	int has_userns = !unshare(CLONE_NEWUSER);
 	int result = 0;
+	gid_t gid = (gid_t)config->uid;
 
-	if (write(config->fd, &has_userns, sizeof(has_userns)) !=
-	    sizeof(has_userns)) {
-		fprintf(stderr, "couldn't write: %m\n");
+	_TC_MUST_P(write(config->parent_socket, &has_userns,
+	                 sizeof(has_userns)) == sizeof(has_userns),
+	           "write", "failed to write to parent");
+
+	_TC_MUST_P(read(config->parent_socket, &result, sizeof(result)) ==
+	             sizeof(result),
+	           "read", "failed to read from parent");
+
+	if (result != 0) {
 		return -1;
 	}
 
-	if (read(config->fd, &result, sizeof(result)) != sizeof(result)) {
-		fprintf(stderr, "couldn't read: %m\n");
-		return -1;
-	}
-	if (result)
-		return -1;
-	if (has_userns) {
-		fprintf(stderr, "done.\n");
-	} else {
-		fprintf(stderr, "unsupported? continuing.\n");
-	}
+	// log
 	fprintf(stderr, "=> switching to uid %d / gid %d...", config->uid,
 	        config->uid);
-	if (setgroups(1, &(gid_t){ config->uid }) ||
-	    setresgid(config->uid, config->uid, config->uid) ||
-	    setresuid(config->uid, config->uid, config->uid)) {
-		fprintf(stderr, "%m\n");
-		return -1;
-	}
-	fprintf(stderr, "done.\n");
+
+	_TC_MUST_P((!setgroups(1, &gid)), "setgroups",
+	           "failed to set process user group");
+	_TC_MUST_P((!setresgid(config->uid, config->uid, config->uid)),
+	           "setresgid", "failed to set real gid");
+	_TC_MUST_P(!(setresuid(config->uid, config->uid, config->uid)),
+	           "setresuid", "failed to set real uid");
+
 	return 0;
 }
 
