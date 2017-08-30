@@ -2,3 +2,4 @@
 *.a
 *.out
 ./tinyc
+.depend

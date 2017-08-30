@@ -5,13 +5,11 @@ INCLUDES		:= -I/usr/include
 BIN 			:= tinyc
 LIB 			:= src/libtinyc.a
 SOURCE_BIN 		:= src/main.c
-TESTS_DIR 		:= tests/
 BUILD 			:= debug
 CFLAGS 			:= -std=gnu99 -Wall -O2
 
 SRCS 			:= $(shell find src/ -name '*.c')
 LIB_OBJS 		:= $(patsubst %.c, %.o, $(filter-out $(SOURCE), $(SRCS)))
-TESTS			:= $(patsubst %.c, %.out, $(shell find $(TESTS_DIR) -name '*.c'))
 
 
 all: $(BIN) test depend
@@ -32,9 +30,6 @@ depend: .depend
 	$(CC) $(CFLAGS) $(INCLUDES) -MM $^ -MF ./.depend
 
 include .depend
-
-test: $(LIB) $(TESTS)
-	@$(foreach test_exec,$(TESTS),./$(test_exec);)
 
 %.out: %.c
 	$(CC) $(CFLAGS) $< $(DEFS) $(INCLUDES) $(LIBS) -o $@ $(LIB)
