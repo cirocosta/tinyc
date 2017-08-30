@@ -22,6 +22,21 @@
 		}                                                              \
 	} while (0)
 
+#define _TC_MUST_GO(condition, label, message, ...)                            \
+	do {                                                                   \
+		if (!(condition)) {                                            \
+			fprintf(stderr, "Error:\n  ");                         \
+			fprintf(stderr, "\n  ");                               \
+			fprintf(stderr, message, ##__VA_ARGS__);               \
+			fprintf(stderr, "\n\n");                               \
+			fprintf(stderr, "  File: %s \n", __FILE__);            \
+			fprintf(stderr, "  Line: %d \n", __LINE__);            \
+			fprintf(stderr, "\n");                                 \
+			fprintf(stderr, "Aborting.\n");                        \
+			goto label;                                            \
+		}                                                              \
+	} while (0)
+
 #define _TC_MUST_P(condition, pmessage, message, ...)                          \
 	do {                                                                   \
 		if (!(condition)) {                                            \
@@ -37,6 +52,24 @@
 			fprintf(stderr, "\n  ");                               \
 			fprintf(stderr, "Aborting.\n");                        \
 			exit(EXIT_FAILURE);                                    \
+		}                                                              \
+	} while (0)
+
+#define _TC_MUST_P_GO(condition, pmessage, label, message, ...)                \
+	do {                                                                   \
+		if (!(condition)) {                                            \
+			fprintf(stderr, "Error:\n  ");                         \
+			fprintf(stderr, "\n  ");                               \
+			fprintf(stderr, message, ##__VA_ARGS__);               \
+			fprintf(stderr, "\n\n");                               \
+			fprintf(stderr, "  File: %s \n", __FILE__);            \
+			fprintf(stderr, "  Line: %d \n", __LINE__);            \
+			fprintf(stderr, "\n");                                 \
+			fprintf(stderr, "System Error:\n  ");                  \
+			perror(pmessage);                                      \
+			fprintf(stderr, "\n  ");                               \
+			fprintf(stderr, "Aborting.\n");                        \
+			goto label;                                            \
 		}                                                              \
 	} while (0)
 
