@@ -14,12 +14,18 @@
 		fprintf(stderr, "\n");                                         \
 	} while (0)
 
+#ifdef DEBUG
 #define _TC_DEBUG(message, ...)                                                \
 	do {                                                                   \
 		fprintf(stderr, "[debug] ");                                   \
 		fprintf(stderr, message, ##__VA_ARGS__);                       \
 		fprintf(stderr, "\n");                                         \
 	} while (0)
+#else
+#define _TC_DEBUG(message, ...)                                                \
+	do {                                                                   \
+	} while (0)
+#endif
 
 #define _TC_MUST(condition, message, ...)                                      \
 	do {                                                                   \
