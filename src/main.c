@@ -23,6 +23,7 @@ typedef struct proc_t {
 } tc_proc_t;
 
 typedef struct tc_t {
+	pid_t child_pid;
 	int sockets[2];
 	int err;
 } tc_tc_t;
@@ -39,7 +40,6 @@ tc_child(void* __attribute__((unused)) arg)
 int
 main()
 {
-	pid_t container_pid;
 	tc_proc_t proc = { 0 };
 	tc_tc_t program = {
 		.sockets = { 0 }, .err = 0,
@@ -55,12 +55,12 @@ main()
 
 	_TC_MUST_P_GO((proc.stack = malloc(STACK_SIZE)), "malloc", cleanup,
 	              "couldn't allocate memory to container process stack");
+	proc.parent_socket = program.sockets[1];
 
-	if ((container_pid = clone(tc_child, proc.stack + STACK_SIZE,
-	                           tc_proc_flags | SIGCHLD, &proc)) == -1) {
-		fprintf(stderr, "=> clone failed! %m\n");
-		// wow, failed
-	}
+	_TC_MUST_P_GO(
+	  (program.child_pid = clone(tc_child, proc.stack + STACK_SIZE,
+	                             tc_proc_flags | SIGCHLD, &proc)) != -1,
+	  "clone", cleanup, "couldn't create child process");
 
 	printf("hello\n");
 	return 0;
