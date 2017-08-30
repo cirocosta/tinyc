@@ -7,6 +7,20 @@
 #define _TC_KB(x) ((size_t)(x) << 10)
 #define _TC_MB(x) ((size_t)(x) << 20)
 
+#define _TC_INFO(message, ...)                                                 \
+	do {                                                                   \
+		fprintf(stderr, "[info] ");                                    \
+		fprintf(stderr, message, ##__VA_ARGS__);                       \
+		fprintf(stderr, "\n");                                         \
+	} while (0)
+
+#define _TC_DEBUG(message, ...)                                                \
+	do {                                                                   \
+		fprintf(stderr, "[debug] ");                                   \
+		fprintf(stderr, message, ##__VA_ARGS__);                       \
+		fprintf(stderr, "\n");                                         \
+	} while (0)
+
 #define _TC_MUST(condition, message, ...)                                      \
 	do {                                                                   \
 		if (!(condition)) {                                            \

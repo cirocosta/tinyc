@@ -1,18 +1,18 @@
 CC 				?= clang
-LIBS 			:= -lpthread
+LIBS 			:=
 DEFS 			:=
 INCLUDES		:= -I/usr/include
 BIN 			:= tinyc
-LIB 			:= src/libtinyc.a
-SOURCE_BIN 		:= src/main.c
+LIB 			:= ./src/libtinyc.a
+SOURCE_BIN 		:= ./src/main.c
 BUILD 			:= debug
 CFLAGS 			:= -std=gnu99 -Wall -O2
 
-SRCS 			:= $(shell find src/ -name '*.c')
-LIB_OBJS 		:= $(patsubst %.c, %.o, $(filter-out $(SOURCE), $(SRCS)))
+SRCS 			:= $(shell find ./src/ -name '*.c')
+LIB_OBJS 		:= $(patsubst %.c, %.o, $(filter-out $(SOURCE_BIN), $(SRCS)))
 
 
-all: $(BIN) test depend
+all: $(BIN) depend
 
 $(BIN): $(LIB) $(SOURCE_BIN)
 	$(CC) $(CFLAGS) $(SOURCE_BIN) $(DEFS) $(INCLUDES) $(LIBS) -o $@ $<
@@ -45,5 +45,5 @@ fmt:
 	find . -name "*.c" -o -name "*.h" | xargs clang-format -style=file -i
 
 
-.PHONY: clean test depend fmt
+.PHONY: clean depend fmt
 

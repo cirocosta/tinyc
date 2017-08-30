@@ -49,13 +49,14 @@ static char* tc_proc_userns_files[] = {
 	"uid_map", "gid_map",
 };
 
+// TODO improve the communication pattern
+//      between child and parent.
 int
 tc_handle_child_uid_map(pid_t child_pid, int fd)
 {
 	int uid_map = 0;
 	int has_userns = -1;
 
-	// TODO do we really need to do this communication?
 	_TC_MUST_GO(
 	  (read(fd, &has_userns, sizeof(has_userns)) == sizeof(has_userns)),
 	  abort, "couldn't read userns config from child");
@@ -107,11 +108,13 @@ abort:
 	return 1;
 }
 
+// TODO improve socket communication with enum
+//      to better handle information sharing.
 int
 tc_set_userns(tc_proc_t* config)
 {
-	int has_userns = !unshare(CLONE_NEWUSER);
 	int result = 0;
+	int has_userns = !unshare(CLONE_NEWUSER);
 	gid_t gid = (gid_t)config->uid;
 
 	_TC_MUST_P(write(config->parent_socket, &has_userns,
@@ -126,9 +129,8 @@ tc_set_userns(tc_proc_t* config)
 		return -1;
 	}
 
-	// log
-	fprintf(stderr, "=> switching to uid %d / gid %d...", config->uid,
-	        config->uid);
+	_TC_DEBUG("=> switching to uid %d / gid %d...", config->uid,
+	          config->uid);
 
 	_TC_MUST_P((!setgroups(1, &gid)), "setgroups",
 	           "failed to set process user group");
