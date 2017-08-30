@@ -58,7 +58,7 @@ static const char* names_right[] =
     "wozniak",     "wright",     "yalow",        "yonath" };
 
 int
-fill_with_name(char* buff, size_t len)
+tc_fill_with_name(char* buff, size_t len)
 {
 	int len_names_left = sizeof(names_left) / sizeof(names_left[0]);
 	int len_names_right = sizeof(names_right) / sizeof(names_right[0]);

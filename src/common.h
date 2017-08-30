@@ -2,10 +2,6 @@
 
 #define TC__COMMON_H
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <stdio.h>
 
 #define _TC_KB(x) ((size_t)(x) << 10)

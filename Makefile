@@ -1,6 +1,6 @@
 CC 				?= clang
 LIBS 			:= -lpthread
-DEFS 			:= -D_GNU_SOURCE
+DEFS 			:=
 INCLUDES		:= -I/usr/include
 BIN 			:= tinyc
 LIB 			:= src/libtinyc.a
