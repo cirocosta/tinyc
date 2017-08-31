@@ -8,9 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/capability.h>
+#include <sys/mount.h>
 #include <sys/prctl.h>
 #include <sys/signal.h>
 #include <sys/socket.h>
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -31,6 +33,7 @@ typedef struct proc_t {
 	char** envp;
 	char* rootfs;
 	char* hostname;
+	char* mount_dir;
 	char* stack;
 } tc_proc_t;
 
@@ -101,6 +104,74 @@ tc_child_capabilities()
 	           "couldn't release memory allocate for capabilities");
 
 	_TC_DEBUG("Capabilities dropped");
+	return 0;
+}
+
+int
+pivot_root(const char* new_root, const char* put_old)
+{
+	return syscall(SYS_pivot_root, new_root, put_old);
+}
+
+int
+tc_child_mounts(tc_proc_t* config)
+{
+	_TC_DEBUG("remounting with MS_PRIVATE");
+
+	if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL)) {
+		fprintf(stderr, "failed! %m\n");
+		return -1;
+	}
+
+	_TC_DEBUG("remounted");
+	_TC_DEBUG("making a temp directory and a bind mount there");
+
+	char mount_dir[] = "/tmp/tmp.XXXXXX";
+	if (!mkdtemp(mount_dir)) {
+		fprintf(stderr, "failed making a directory!\n");
+		return -1;
+	}
+
+	if (mount(config->mount_dir, mount_dir, NULL, MS_BIND | MS_PRIVATE,
+	          NULL)) {
+		fprintf(stderr, "bind mount failed!\n");
+		return -1;
+	}
+
+	char inner_mount_dir[] = "/tmp/tmp.XXXXXX/oldroot.XXXXXX";
+	memcpy(inner_mount_dir, mount_dir, sizeof(mount_dir) - 1);
+	if (!mkdtemp(inner_mount_dir)) {
+		fprintf(stderr, "failed making the inner directory!\n");
+		return -1;
+	}
+
+	_TC_DEBUG("done");
+	_TC_DEBUG("pivoting root...");
+
+	if (pivot_root(mount_dir, inner_mount_dir)) {
+		fprintf(stderr, "failed!\n");
+		return -1;
+	}
+	fprintf(stderr, "done.\n");
+
+	char* old_root_dir = basename(inner_mount_dir);
+	char old_root[sizeof(inner_mount_dir) + 1] = { "/" };
+	strcpy(&old_root[1], old_root_dir);
+
+	fprintf(stderr, "=> unmounting %s...", old_root);
+	if (chdir("/")) {
+		fprintf(stderr, "chdir failed! %m\n");
+		return -1;
+	}
+	if (umount2(old_root, MNT_DETACH)) {
+		fprintf(stderr, "umount failed! %m\n");
+		return -1;
+	}
+	if (rmdir(old_root)) {
+		fprintf(stderr, "rmdir failed! %m\n");
+		return -1;
+	}
+	fprintf(stderr, "done.\n");
 	return 0;
 }
 
