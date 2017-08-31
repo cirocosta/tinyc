@@ -1,5 +1,5 @@
 CC 				?= clang
-LIBS 			:=
+LIBS 			:= -lcap
 DEFS 			:=
 INCLUDES		:= -I/usr/include
 BIN 			:= tinyc

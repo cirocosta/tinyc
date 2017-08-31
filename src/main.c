@@ -1,10 +1,14 @@
 #define _GNU_SOURCE
 #include <fcntl.h>
 #include <grp.h>
+#include <linux/capability.h>
 #include <linux/limits.h>
 #include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/capability.h>
+#include <sys/prctl.h>
 #include <sys/signal.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -39,9 +43,89 @@ typedef struct tc_t {
 static const int tc_proc_flags = CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWPID |
                                  CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUTS;
 
+// TODO this could be configured
+static const int tc_dropped_capabilities[] = {
+	CAP_AUDIT_CONTROL,   // enable/disable kernel auditing
+	CAP_AUDIT_READ,      // reading kernel audit log via netlink socket
+	CAP_AUDIT_WRITE,     // write records to the kernel auditing log
+	CAP_BLOCK_SUSPEND,   // allows preventing system to suspend
+	CAP_DAC_READ_SEARCH, // bypass file permission checks
+	CAP_FSETID,          // TODO understand what can be done with this
+	CAP_IPC_LOCK,        // allows locking more memory than allowed
+	CAP_MAC_ADMIN,       // override mandatory access control
+	CAP_MAC_OVERRIDE,    // change access control
+	CAP_MKNOD,           // create special files
+	CAP_SETFCAP,         // set file capabilities
+	CAP_SYSLOG,          // privileged syslog operations
+	CAP_SYS_ADMIN,       // things like mount, setns, quotactl, swapon/off
+	CAP_SYS_BOOT,        // reboot the sys, load kernel mods ...
+	CAP_SYS_MODULE,      // kernel module operations
+	CAP_SYS_NICE,        // set higher priorities in the scheduler
+	CAP_SYS_RAWIO,       // full access to system memory
+	CAP_SYS_RESOURCE, // circumventing kernel-wide limits, quotas, rlimits
+	CAP_SYS_TIME,     // system clock ...
+	CAP_WAKE_ALARM,   // interfere with suspended state
+};
+
 int
-tc_child(void* __attribute__((unused)) arg)
+tc_child_capabilities()
 {
+	size_t num_caps =
+	  sizeof(tc_dropped_capabilities) / sizeof(*tc_dropped_capabilities);
+	cap_t caps;
+
+	_TC_DEBUG("Dropping capabilities");
+
+	for (size_t i = 0; i < num_caps; i++) {
+		_TC_MUST_P(prctl(PR_CAPBSET_DROP, tc_dropped_capabilities[i], 0,
+		                 0, 0) != -1,
+		           "prctl",
+		           "Couldn't drop capability %d for the current proc",
+		           tc_dropped_capabilities[i]);
+	}
+
+	_TC_DEBUG("Setting inheritable capabilities");
+
+	_TC_MUST_P((caps = cap_get_proc()) != NULL, "cap_get_proc",
+	           "couldn't allocate proc capability state");
+
+	_TC_MUST_P(cap_set_flag(caps, CAP_INHERITABLE, num_caps,
+	                        tc_dropped_capabilities, CAP_CLEAR) != -1,
+	           "cap_set_flag", "couldn't set flag of desired"
+	                           " capabilities to inheritable");
+
+	_TC_MUST_P(cap_set_proc(caps) != -1, "cap_set_proc",
+	           "couldn't set process capabilities from cap state");
+
+	_TC_MUST_P(cap_free(caps), "cap_free",
+	           "couldn't release memory allocate for capabilities");
+
+	_TC_DEBUG("Capabilities dropped");
+	return 0;
+}
+
+int
+tc_child(void* arg)
+{
+	tc_proc_t* proc = arg;
+
+	if (sethostname(proc->hostname, strlen(proc->hostname)) ||
+	    tc_child_mounts(config) || tc_child_userns(config) ||
+	    tc_child_capabilities() || tc_child_syscalls()) {
+		close(proc->parent_socket);
+		return -1;
+	}
+
+	if (close(proc->parent_socket)) {
+		fprintf(stderr, "close failed: %m\n");
+		return -1;
+	}
+
+	if (execve(proc->argv[0], proc->argv, NULL)) {
+		fprintf(stderr, "execve failed! %m.\n");
+		return -1;
+	}
+
 	return 0;
 }
 

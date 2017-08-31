@@ -23,3 +23,6 @@
 ```
 
 
+- `libcap-dev`
+- `libseccomp-dev`
+
