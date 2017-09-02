@@ -116,29 +116,30 @@ pivot_root(const char* new_root, const char* put_old)
 int
 tc_child_mounts(tc_proc_t* config)
 {
+	char mount_dir[] = "/tmp/tmp.XXXXXX";
+	char inner_mount_dir[] = "/tmp/tmp.XXXXXX/oldroot.XXXXXX";
+	char* old_root_dir;
+
 	_TC_DEBUG("remounting with MS_PRIVATE");
 
-	if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL)) {
-		fprintf(stderr, "failed! %m\n");
-		return -1;
-	}
+	_TC_MUST_P(!mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL), "mount",
+	           "couldn't remount '/' with MS_PRIVATE");
 
 	_TC_DEBUG("remounted");
 	_TC_DEBUG("making a temp directory and a bind mount there");
 
-	char mount_dir[] = "/tmp/tmp.XXXXXX";
 	if (!mkdtemp(mount_dir)) {
 		fprintf(stderr, "failed making a directory!\n");
 		return -1;
 	}
 
+	// mounting [src:config->mount_dir, dst:tmp_dir]
 	if (mount(config->mount_dir, mount_dir, NULL, MS_BIND | MS_PRIVATE,
 	          NULL)) {
 		fprintf(stderr, "bind mount failed!\n");
 		return -1;
 	}
 
-	char inner_mount_dir[] = "/tmp/tmp.XXXXXX/oldroot.XXXXXX";
 	memcpy(inner_mount_dir, mount_dir, sizeof(mount_dir) - 1);
 	if (!mkdtemp(inner_mount_dir)) {
 		fprintf(stderr, "failed making the inner directory!\n");
@@ -154,7 +155,8 @@ tc_child_mounts(tc_proc_t* config)
 	}
 	fprintf(stderr, "done.\n");
 
-	char* old_root_dir = basename(inner_mount_dir);
+	old_root_dir = basename(inner_mount_dir);
+
 	char old_root[sizeof(inner_mount_dir) + 1] = { "/" };
 	strcpy(&old_root[1], old_root_dir);
 
