@@ -180,12 +180,14 @@ tc_child(void* arg)
 {
 	tc_proc_t* proc = arg;
 
-	if (sethostname(proc->hostname, strlen(proc->hostname)) ||
-	    tc_child_mounts(config) || tc_child_userns(config) ||
-	    tc_child_capabilities() || tc_child_syscalls()) {
-		close(proc->parent_socket);
-		return -1;
-	}
+	_TC_MUST_P_GO(!sethostname(proc->hostname, strlen(proc->hostname)),
+	              "sethostname", abort, "couldn't set hostname to %s",
+	              proc->hostname);
+	_TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child mounts");
+	// tc_child_userns(proc)
+	_TC_MUST_GO(!tc_child_capabilities(), abort,
+	            "couldn't set capabilities");
+	// tc_child_syscalls();
 
 	if (close(proc->parent_socket)) {
 		fprintf(stderr, "close failed: %m\n");
@@ -198,6 +200,10 @@ tc_child(void* arg)
 	}
 
 	return 0;
+
+abort:
+	close(proc->parent_socket);
+	return 1;
 }
 
 static char* tc_proc_userns_files[] = {
