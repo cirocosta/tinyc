@@ -13,6 +13,7 @@
 #include <sys/signal.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -22,20 +23,56 @@
 #define USERNS_COUNT 2000
 
 #include "./common.h"
+#include "./names-generator.h"
 
 #define STACK_SIZE _TC_MB(1)
 
 typedef struct proc_t {
+	// user id (userns-remap).
 	uid_t uid;
+
+	// argc is the argument counter that
+	// indicates how many arguments 'argv'.
+	// has.
 	int argc;
-	int parent_socket;
+
+	// argv container the arguments specified by
+	// the user to be executed in the container.
 	char** argv;
+
+	// envp is a list of environment variables
+	// to be set as the container environ.
 	char** envp;
-	char* rootfs;
-	char* hostname;
-	char* mount_dir;
+
+	// hostname is the hostname used by the
+	// container.
+	char hostname[255];
+
+	// mount_dir is the directory to be
+	// mounted as the rootfs inside the container
+	// as the '/'.
+	char mount_dir[255];
+
+	// parent_socket references a socket to
+	// communicate with the parent process so
+	// that IPC can be performed.
+	int parent_socket;
+
+	// stack is the stack previously allocated
+	// to the container init process.
 	char* stack;
 } tc_proc_t;
+
+tc_proc_t*
+tc_proc_create()
+{
+	return NULL;
+}
+
+void
+tc_proc_destroy()
+{
+}
 
 typedef struct tc_t {
 	pid_t child_pid;
@@ -306,12 +343,25 @@ tc_set_userns(tc_proc_t* config)
 }
 
 int
-main()
+main(int argc, char** argv)
 {
+	struct timeval time;
+
 	tc_proc_t proc = { 0 };
 	tc_tc_t program = {
 		.sockets = { 0 }, .err = 0,
 	};
+
+	gettimeofday(&time, NULL);
+	srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
+
+	proc.argv = argv;
+	proc.argc = argc - 1;
+	proc.hostname = malloc(255 * sizeof(char));
+	tc_fill_with_name(proc.hostname, 255);
+
+	printf("hostname=%s\n", proc.hostname);
+	return 0;
 
 	_TC_MUST_P(
 	  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, program.sockets)) == 0,
@@ -330,7 +380,6 @@ main()
 	                             tc_proc_flags | SIGCHLD, &proc)) != -1,
 	  "clone", cleanup, "couldn't create child process");
 
-	printf("hello\n");
 	return 0;
 
 cleanup:

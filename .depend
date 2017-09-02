@@ -1,1 +1,1 @@
-names-generator.o: src/names-generator.c
+names-generator.o: src/names-generator.c src/./names-generator.h

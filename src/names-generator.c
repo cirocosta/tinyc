@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "./names-generator.h"
 
 static const char* names_left[] =
   {
