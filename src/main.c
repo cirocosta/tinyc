@@ -27,6 +27,10 @@
 
 #define STACK_SIZE _TC_MB(1)
 
+/**
+ *      tc_proc_t encapsulates the configurations
+ *      of the container.
+ */
 typedef struct proc_t {
 	// user id (userns-remap).
 	uid_t uid;
@@ -63,27 +67,25 @@ typedef struct proc_t {
 	char* stack;
 } tc_proc_t;
 
-tc_proc_t*
-tc_proc_create()
-{
-	return NULL;
-}
-
-void
-tc_proc_destroy()
-{
-}
-
+// TODO get rid of this or make a better name
 typedef struct tc_t {
 	pid_t child_pid;
 	int sockets[2];
 	int err;
 } tc_tc_t;
 
+/**
+ *      tc_proc_flags is a bitset-ted int that is
+ *      used when 'clone(2)'ing to have the new process
+ *      spwaned with a set of namespaces set.
+ */
 static const int tc_proc_flags = CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWPID |
                                  CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUTS;
 
-// TODO this could be configured
+/**
+ *      tc_dropped_capabilities is a list of capabilities
+ *      that are droppbed when a container is created.
+ */
 static const int tc_dropped_capabilities[] = {
 	CAP_AUDIT_CONTROL,   // enable/disable kernel auditing
 	CAP_AUDIT_READ,      // reading kernel audit log via netlink socket
