@@ -22,6 +22,7 @@
 #define USERNS_OFFSET 10000
 #define USERNS_COUNT 2000
 
+#include "./cli.h"
 #include "./common.h"
 #include "./names-generator.h"
 
@@ -383,6 +384,9 @@ tc_set_userns(tc_proc_t* config)
 int
 main(int argc, char** argv)
 {
+	tc_cli_help();
+	exit(0);
+
 	struct timeval time;
 
 	tc_proc_t proc = { 0 };

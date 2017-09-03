@@ -45,5 +45,13 @@ tc_cli_parse(tc_cli_t* cli, int argc, __attribute__((unused)) char** argv)
 void
 tc_cli_help()
 {
-	fprintf(stderr, tc_cli_msg_help);
+	tc_cli_flag_t const* flag;
+	fprintf(stderr, tc_cli_msg_help_header);
+
+	for (int i = 0; i < tc_cli_flags_len; i++) {
+		flag = tc_cli_flags[i];
+		fprintf(stderr, "    %s\t\t%s\n", flag->name,
+		        flag->description);
+	}
+	fprintf(stderr, "\n");
 }

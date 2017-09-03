@@ -57,15 +57,17 @@ static const tc_cli_flag_t* tc_cli_flags[] = {
 static const int tc_cli_flags_len =
   sizeof(tc_cli_flags) / sizeof(tc_cli_flag_t*);
 
-static const char tc_cli_msg_help[] =
+/**
+ * Top of the help message that is issued in
+ * case of either CLI parsing failures or ask
+ * for help'.
+ */
+static const char tc_cli_msg_help_header[] =
   "\n"
   "TINYC - 0.0.1\n"
   "Copyright 2017 - Ciro S. Costa <ciro.costa@liferay.com>\n"
   "\n"
-  "Usage:  tinyc [opts] cmd\n"
-  "        --memory MEM   sets maximum amount of memory\n"
-  "        --help         shows this help message\n"
-  "\n";
+  "Usage:  tinyc [opts] cmd\n";
 
 /**
  * Parses the command line arguments and
