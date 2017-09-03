@@ -19,9 +19,10 @@ all: $(BIN) depend
 $(BIN): $(LIB) $(SOURCE_BIN)
 	$(CC) $(CFLAGS) $(SOURCE_BIN) $(DEFS) $(INCLUDES) $(LIBS) -o $@ $<
 
-test: $(TESTS_BINS)
+test: clean all $(TESTS_BINS)
 	@echo "-------"
 	@echo "TESTS:"
+	@echo "-------"
 	@find ./test/ -name "*.out" -exec /bin/sh -c '{ echo {} ; ./{} ; }'  \;
 
 $(LIB): $(LIB_OBJS)
