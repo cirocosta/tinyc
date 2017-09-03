@@ -2,19 +2,17 @@ sudo: false
 language: 'c'
 dist: 'trusty'
 
+env: 'CC=clang-3.9'
+addons:
+  apt:
+    sources:
+      - 'ubuntu-toolchain-r-test'
+      - 'llvm-toolchain-precise-3.9'
+    packages:
+      - 'clang-3.9'
+      - 'm4'
+      - 'valgrind'
 
-matrix:
-  include:
-  - env: 'CC=clang-3.9'
-		addons:
-			apt:
-				sources:
-					- 'ubuntu-toolchain-r-test'
-					- 'llvm-toolchain-precise-3.9'
-				packages:
-					- 'clang-3.9'
-					- 'm4'
-					- 'valgrind'
 
 script:
   - make
