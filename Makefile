@@ -25,6 +25,13 @@ test: clean all $(TESTS_BINS)
 	@echo "-------"
 	@find ./test/ -name "*.out" -exec /bin/sh -c '{ echo {} ; ./{} ; }'  \;
 
+test-leak: clean all $(TESTS_BINS)
+	@echo "-------"
+	@echo "TEST LEAK:"
+	@echo "-------"
+	@find ./test/ -name "*.out" -exec /bin/sh -c '{ echo {} ; valgrind --leak-check=yes --error-exitcode=1 {} ; }'  \;
+
+
 $(LIB): $(LIB_OBJS)
 	$(AR) rvs $@ $^
 
