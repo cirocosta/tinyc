@@ -1,21 +1,26 @@
-CC 				?= clang
-LIBS 			:= -lcap
+CC 				?=	clang
+LIBS 			:=	-lcap
 DEFS 			:=
-INCLUDES		:= -I/usr/include
-BIN 			:= tinyc
-LIB 			:= ./src/libtinyc.a
-SOURCE_BIN 		:= ./src/main.c
-BUILD 			:= debug
-CFLAGS 			:= -std=gnu99 -Wall -O2
+INCLUDES		:=	-I/usr/include
+BIN 			:=	tinyc
+LIB 			:=	./src/libtinyc.a
+SOURCE_BIN 		:=	./src/main.c
+BUILD 			:=	debug
+CFLAGS 			:=	-std=gnu99 -Wall -O2
 
-SRCS 			:= $(shell find ./src/ -name '*.c')
-LIB_OBJS 		:= $(patsubst %.c, %.o, $(filter-out $(SOURCE_BIN), $(SRCS)))
+SRCS 			:=	$(shell find ./src/ -name '*.c')
+LIB_OBJS 		:=	$(patsubst %.c, %.o, $(filter-out $(SOURCE_BIN), $(SRCS)))
+TESTS 			:=	$(shell find ./test/ -name '*.c')
+TESTS_BINS		:=	$(patsubst %.c, %.out, $(filter-out $(SOURCE_BIN), $(TESTS)))
 
 
 all: $(BIN) depend
 
 $(BIN): $(LIB) $(SOURCE_BIN)
 	$(CC) $(CFLAGS) $(SOURCE_BIN) $(DEFS) $(INCLUDES) $(LIBS) -o $@ $<
+
+test: $(TESTS_BINS)
+	@find ./test/ -name "*.out" -exec ./{} \;
 
 $(LIB): $(LIB_OBJS)
 	$(AR) rvs $@ $^

@@ -48,14 +48,18 @@ typedef struct proc_t {
 	// to be set as the container environ.
 	char** envp;
 
+	// envpc counts the number of environment
+	// variables that 'envp' holds..
+	int envpc;
+
 	// hostname is the hostname used by the
 	// container.
 	char hostname[255];
 
-	// mount_dir is the directory to be
+	// roofs is the directory to be
 	// mounted as the rootfs inside the container
 	// as the '/'.
-	char mount_dir[255];
+	char rootfs[255];
 
 	// parent_socket references a socket to
 	// communicate with the parent process so
@@ -66,6 +70,32 @@ typedef struct proc_t {
 	// to the container init process.
 	char* stack;
 } tc_proc_t;
+
+void
+tc_proc_show(tc_proc_t* proc)
+{
+	fprintf(stderr, "Configuration:\n");
+	fprintf(stderr, "  uid:             %d\n"
+	                "  argc:            %d\n"
+	                "  envpc:           %d\n"
+	                "  hostname:        %s\n"
+	                "  rootfs:          %s\n"
+	                "  parent_socket:   %d\n",
+	        proc->uid, proc->argc, proc->envpc, proc->hostname,
+	        proc->rootfs, proc->parent_socket);
+
+	fprintf(stderr, "  argv:           ");
+	for (int i = 0; i < proc->argc; i++) {
+		fprintf(stderr, " %s", proc->argv[i]);
+	}
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "  envp:          ");
+	for (int i = 0; i < proc->envpc; i++) {
+		fprintf(stderr, " %s", proc->envp[i]);
+	}
+	fprintf(stderr, "\n\n");
+}
 
 // TODO get rid of this or make a better name
 typedef struct tc_t {
@@ -157,36 +187,42 @@ tc_child_mounts(tc_proc_t* config)
 {
 	char mount_dir[] = "/tmp/tmp.XXXXXX";
 	char inner_mount_dir[] = "/tmp/tmp.XXXXXX/oldroot.XXXXXX";
-	char* old_root_dir;
 
-	_TC_DEBUG("remounting with MS_PRIVATE");
+	_TC_DEBUG("remounting with MS_PRIVATE (mount_dir=%s)", mount_dir);
 
 	_TC_MUST_P(!mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL), "mount",
-	           "couldn't remount '/' with MS_PRIVATE");
+	           "couldn't remount '/' with MS_PRIVATE (mount_dir=%s)",
+	           mount_dir);
 
-	_TC_DEBUG("remounted");
-	_TC_DEBUG("making a temp directory and a bind mount there");
+	_TC_DEBUG("making temporary directory to bind rootfs to");
 
-	if (!mkdtemp(mount_dir)) {
-		fprintf(stderr, "failed making a directory!\n");
-		return -1;
-	}
+	_TC_MUST_P(mkdtemp(mount_dir) != NULL, "mkdtemp",
+	           "couldn't create temporary directory");
 
 	// mounting [src:config->mount_dir, dst:tmp_dir]
-	if (mount(config->mount_dir, mount_dir, NULL, MS_BIND | MS_PRIVATE,
+	if (mount(config->rootfs, mount_dir, NULL, MS_BIND | MS_PRIVATE,
 	          NULL)) {
 		fprintf(stderr, "bind mount failed!\n");
 		return -1;
 	}
 
+	// Make inner_mount_dir's prefix be equal to mount_dir
+	// TODO errcheck the copying
 	memcpy(inner_mount_dir, mount_dir, sizeof(mount_dir) - 1);
+
+	// creating the temporary directory inside 'mount_dir' (tmp)
 	if (!mkdtemp(inner_mount_dir)) {
 		fprintf(stderr, "failed making the inner directory!\n");
 		return -1;
 	}
 
-	_TC_DEBUG("done");
-	_TC_DEBUG("pivoting root...");
+	_TC_DEBUG("created temporary inner directory (inner_mount_dir=%s)",
+	          inner_mount_dir);
+	_TC_DEBUG("Pivoting root (new=%s,put_old=%s)", mount_dir,
+	          inner_mount_dir);
+
+	// moves the '/' of the process to the directory 'inner_mount_dir'
+	// and makes 'mount_dir' the new root filesystem.
 
 	if (pivot_root(mount_dir, inner_mount_dir)) {
 		fprintf(stderr, "failed!\n");
@@ -194,9 +230,9 @@ tc_child_mounts(tc_proc_t* config)
 	}
 	fprintf(stderr, "done.\n");
 
-	old_root_dir = basename(inner_mount_dir);
-
+	char* old_root_dir = basename(inner_mount_dir);
 	char old_root[sizeof(inner_mount_dir) + 1] = { "/" };
+
 	strcpy(&old_root[1], old_root_dir);
 
 	fprintf(stderr, "=> unmounting %s...", old_root);
@@ -359,11 +395,10 @@ main(int argc, char** argv)
 
 	proc.argv = argv;
 	proc.argc = argc - 1;
-	proc.hostname = malloc(255 * sizeof(char));
+
 	tc_fill_with_name(proc.hostname, 255);
 
-	printf("hostname=%s\n", proc.hostname);
-	return 0;
+	tc_proc_show(&proc);
 
 	_TC_MUST_P(
 	  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, program.sockets)) == 0,
