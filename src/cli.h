@@ -77,6 +77,11 @@ static const char tc_cli_msg_help_header[] =
  * be uses as 'default values'.
  *
  * In case of errors, non-zero is returned.
+ *
+ * It expectes to reveice 'argc' and 'argv' right from
+ * the CLI, which means that it expects 'argv[0]' to
+ * container the 'tinyc' executable and then the rest
+ * be the actual set of flags and command to execute.
  */
 int tc_cli_parse(tc_cli_t*, int argc, char** argv);
 
