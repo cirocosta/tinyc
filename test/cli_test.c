@@ -1,15 +1,20 @@
 #include "../src/cli.h"
-
-typedef void (*tc_assertion)(int);
+#include "../src/common.h"
 
 void
-test_parses_accordingly()
+test_fails_if_no_args()
 {
-	fprintf(stderr, "OK\n");
+	int argc = 0;
+	char* argv[] = {};
+	tc_cli_t cli = { 0 };
+	int res = tc_cli_parse(&cli, argc, argv);
+
+	_TC_MUST(res, "should have failed");
+	_TC_INFO("OK");
 }
 
 int
 main()
 {
-	test_parses_accordingly();
+	test_fails_if_no_args();
 }

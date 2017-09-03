@@ -1,10 +1,18 @@
 #include "./cli.h"
 
-tc_cli_t*
-tc_cli_parse(int __attribute__((unused)) argc,
+int
+tc_cli_parse(tc_cli_t* cli, int __attribute__((unused)) argc,
              char** __attribute__((unused)) argv)
 {
-	return NULL;
+	if (!cli) {
+		return 1;
+	}
+
+	if (cli->argc < 1) {
+		return 1;
+	}
+
+	return 0;
 }
 
 void

@@ -20,7 +20,9 @@ $(BIN): $(LIB) $(SOURCE_BIN)
 	$(CC) $(CFLAGS) $(SOURCE_BIN) $(DEFS) $(INCLUDES) $(LIBS) -o $@ $<
 
 test: $(TESTS_BINS)
-	@find ./test/ -name "*.out" -exec ./{} \;
+	@echo "-------"
+	@echo "TESTS:"
+	@find ./test/ -name "*.out" -exec /bin/sh -c '{ echo {} ; ./{} ; }'  \;
 
 $(LIB): $(LIB_OBJS)
 	$(AR) rvs $@ $^
