@@ -3,6 +3,7 @@
 #define TC__COMMON_H
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define _TC_KB(x) ((size_t)(x) << 10)
 #define _TC_MB(x) ((size_t)(x) << 20)

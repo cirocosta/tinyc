@@ -1,9 +1,19 @@
 #ifndef TC__PROC_H
 #define TC__PROC_H
 
+#define _GNU_SOURCE
+#include <fcntl.h>
 #include <linux/sched.h>
+#include <sched.h>
 #include <stdio.h>
+#include <sys/signal.h>
+#include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
+
+#include "./common.h"
+
+#define STACK_SIZE _TC_MB(1)
 
 /**
  *      tc_proc_t encapsulates the configurations
@@ -39,10 +49,17 @@ typedef struct proc_t {
 	// as the '/'.
 	char rootfs[255];
 
-	// parent_socket references a socket to
-	// communicate with the parent process so
-	// that IPC can be performed.
-	int parent_socket;
+	// child_pid holds the pid of the child that
+	// has been created.
+	pid_t child_pid;
+
+	// parent_ipc_socket references a socket to
+	// communicate with the parent process.
+	int parent_ipc_socket;
+
+	// child_ipc_socket references a socket to
+	// communicate with the child process.
+	int child_ipc_socket;
 
 	// stack is the stack previously allocated
 	// to the container init process.
@@ -58,33 +75,14 @@ static const int tc_proc_flags = CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWPID |
                                  CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUTS;
 
 /**
+ *      TODO document this.
+ */
+int tc_proc_run(tc_proc_t* proc);
+
+/**
  *      dumps to 'stderr' the configuration that will
  *      be used by the process to be spawned.
  */
-void
-tc_proc_show(tc_proc_t* proc)
-{
-	fprintf(stderr, "Configuration:\n");
-	fprintf(stderr, "  uid:             %d\n"
-	                "  argc:            %d\n"
-	                "  envpc:           %d\n"
-	                "  hostname:        %s\n"
-	                "  rootfs:          %s\n"
-	                "  parent_socket:   %d\n",
-	        proc->uid, proc->argc, proc->envpc, proc->hostname,
-	        proc->rootfs, proc->parent_socket);
-
-	fprintf(stderr, "  argv:           ");
-	for (int i = 0; i < proc->argc; i++) {
-		fprintf(stderr, " %s", proc->argv[i]);
-	}
-	fprintf(stderr, "\n");
-
-	fprintf(stderr, "  envp:          ");
-	for (int i = 0; i < proc->envpc; i++) {
-		fprintf(stderr, " %s", proc->envp[i]);
-	}
-	fprintf(stderr, "\n\n");
-}
+void tc_proc_show(tc_proc_t* proc);
 
 #endif

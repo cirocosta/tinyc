@@ -17,7 +17,10 @@ TESTS_BINS		:=	$(patsubst %.c, %.out, $(filter-out $(SOURCE_BIN), $(TESTS)))
 all: $(BIN) depend
 
 $(BIN): $(LIB) $(SOURCE_BIN)
-	$(CC) $(CFLAGS) $(SOURCE_BIN) $(DEFS) $(INCLUDES) $(LIBS) -o $@ $<
+	$(CC) $(CFLAGS) $(SOURCE_BIN) $(DEFS) $(INCLUDES) $(LIBS) -static -o $@ $<
+
+install: $(BIN)
+	sudo cp ./tinyc /usr/local/bin/tinyc
 
 test: clean all $(TESTS_BINS)
 	@echo "-------"
