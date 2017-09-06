@@ -27,6 +27,10 @@ tc_cli_parse(tc_cli_t* cli, int argc, __attribute__((unused)) char** argv)
 		if (current_arg[0] != '-' || current_arg[1] != '-') {
 			break;
 		}
+
+		if (!strcmp(current_arg, "--help")) {
+			cli->help = true;
+		}
 	}
 
 	cli->argc = argc - ndx;

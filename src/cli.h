@@ -1,6 +1,7 @@
 #ifndef TC__CLI_H
 #define TC__CLI_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +12,7 @@
  * already done.
  */
 typedef struct cli_t {
-	char help;
+	bool help;
 	char rootfs[256];
 	char** argv;
 	int argc;
