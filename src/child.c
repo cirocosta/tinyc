@@ -78,7 +78,7 @@ tc_child_mounts(tc_proc_t* config)
 	// moves the '/' of the process to the directory 'inner_mount_dir'
 	// and makes 'mount_dir' the new root filesystem.
 
-	if (pivot_root(mount_dir, inner_mount_dir)) {
+	if (tc_syscall_pivot_root(mount_dir, inner_mount_dir)) {
 		fprintf(stderr, "failed!\n");
 		return -1;
 	}
@@ -121,7 +121,7 @@ tc_child(void* arg)
 	            "couldn't set capabilities");
 	// tc_child_syscalls();
 
-	if (close(proc->parent_socket)) {
+	if (close(proc->parent_ipc_socket)) {
 		fprintf(stderr, "close failed: %m\n");
 		return -1;
 	}
@@ -134,7 +134,7 @@ tc_child(void* arg)
 	return 0;
 
 abort:
-	close(proc->parent_socket);
+	close(proc->parent_ipc_socket);
 	return 1;
 }
 
@@ -147,11 +147,11 @@ tc_child_set_userns(tc_proc_t* config)
 	int has_userns = !unshare(CLONE_NEWUSER);
 	gid_t gid = (gid_t)config->uid;
 
-	_TC_MUST_P(write(config->parent_socket, &has_userns,
+	_TC_MUST_P(write(config->parent_ipc_socket, &has_userns,
 	                 sizeof(has_userns)) == sizeof(has_userns),
 	           "write", "failed to write to parent");
 
-	_TC_MUST_P(read(config->parent_socket, &result, sizeof(result)) ==
+	_TC_MUST_P(read(config->parent_ipc_socket, &result, sizeof(result)) ==
 	             sizeof(result),
 	           "read", "failed to read from parent");
 

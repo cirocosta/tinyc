@@ -17,7 +17,7 @@ TESTS_BINS		:=	$(patsubst %.c, %.out, $(filter-out $(SOURCE_BIN), $(TESTS)))
 all: $(BIN) depend
 
 $(BIN): $(LIB) $(SOURCE_BIN)
-	$(CC) $(CFLAGS) $(SOURCE_BIN) $(DEFS) $(INCLUDES) $(LIBS) -static -o $@ $<
+	$(CC) $(CFLAGS) $(SOURCE_BIN) $(DEFS) $(INCLUDES) -o $@ $< $(LIBS)
 
 install: $(BIN)
 	sudo cp ./tinyc /usr/local/bin/tinyc

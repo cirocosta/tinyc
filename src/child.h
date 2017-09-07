@@ -1,11 +1,20 @@
 #ifndef TC__CHILD_H
 #define TC__CHILD_H
 
+#define _GNU_SOURCE
+
+#include <grp.h>
+#include <libgen.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/capability.h>
+#include <sys/mount.h>
 #include <sys/prctl.h>
+#include <unistd.h>
 
 #include "./common.h"
 #include "./proc.h"
+#include "./syscall.h"
 
 /**
  *      tc_child_dropped_capabilities is a list of capabilities

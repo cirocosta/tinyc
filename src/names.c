@@ -62,7 +62,7 @@ static const int tc_len_names_right =
   sizeof(tc_names_right) / sizeof(tc_names_right[0]);
 
 int
-tc_fill_with_name(char* buff, size_t len)
+tc_names_fill(char* buff, size_t len)
 {
 	int left_ndx = rand() % tc_len_names_left;
 	int right_ndx = rand() % tc_len_names_right;
