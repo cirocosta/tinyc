@@ -28,8 +28,19 @@ tc_cli_parse(tc_cli_t* cli, int argc, __attribute__((unused)) char** argv)
 			break;
 		}
 
-		if (!strcmp(current_arg, "--help")) {
+		if (!strcmp(current_arg, TC_FLAG_HELP.name)) {
 			cli->help = true;
+			continue;
+		}
+
+		if (!strcmp(current_arg, TC_FLAG_ROOTFS.name)) {
+			cli->rootfs = current_arg;
+			continue;
+		}
+
+		if (!strcmp(current_arg, TC_FLAG_ENV.name)) {
+			cli->envp[cli->envc++] = current_arg;
+			continue;
 		}
 	}
 

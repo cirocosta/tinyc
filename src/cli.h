@@ -13,9 +13,11 @@
  */
 typedef struct cli_t {
 	bool help;
-	char rootfs[256];
+	char* rootfs;
 	char** argv;
 	int argc;
+	char** envp;
+	int envc;
 } tc_cli_t;
 
 /**
@@ -45,12 +47,23 @@ static const tc_cli_flag_t TC_FLAG_HELP = {
 	.description = "shows this help message",
 };
 
+static const tc_cli_flag_t TC_FLAG_ROOTFS = {
+	.name = "--rootfs",
+	.name_len = strlen("--rootfs"),
+	.description = "absolute path to a rootfs",
+};
+
+static const tc_cli_flag_t TC_FLAG_ENV = {
+	.name = "--env",
+	.name_len = strlen("--env"),
+	.description = "additional environment variable (list)",
+};
+
 /**
  *      Available flags to retrieve values from the 'cli'.
  */
-static const tc_cli_flag_t* tc_cli_flags[] = {
-	&TC_FLAG_HELP,
-};
+static const tc_cli_flag_t* tc_cli_flags[] = { &TC_FLAG_HELP, &TC_FLAG_ROOTFS,
+	                                       &TC_FLAG_ENV };
 
 /**
  *      Number of flags that 'tc_cli_flags' contain.
