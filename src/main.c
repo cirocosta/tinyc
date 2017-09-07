@@ -32,6 +32,9 @@ main(int argc, char** argv)
 	gettimeofday(&time, NULL);
 	srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
 
+	proc.rootfs = cli.rootfs;
+	proc.envp = cli.envp;
+	proc.envpc = cli.envc;
 	proc.argv = cli.argv;
 	proc.argc = cli.argc;
 
@@ -57,6 +60,7 @@ main(int argc, char** argv)
 	return 0;
 
 abort:
+	tc_cli_cleanup(&cli);
 	tc_proc_cleanup(&proc);
 	return 1;
 }

@@ -104,4 +104,9 @@ int tc_cli_parse(tc_cli_t*, int argc, char** argv);
  */
 void tc_cli_help();
 
+/**
+ *      Cleans any resources allocated by 'tc_cli_parse'.
+ */
+void tc_cli_cleanup(tc_cli_t* cli);
+
 #endif

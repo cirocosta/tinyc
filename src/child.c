@@ -9,8 +9,7 @@ tc_child(void* arg)
 	              "sethostname", abort, "couldn't set hostname to %s",
 	              proc->hostname);
 
-	// _TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child
-	// mounts");
+	_TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child mounts");
 
 	_TC_MUST_GO(!tc_child_set_userns(proc), abort, "couldn't set userns");
 
@@ -84,69 +83,62 @@ tc_child_mounts(tc_proc_t* proc)
 	char mount_dir[] = "/tmp/tmp.XXXXXX";
 	char inner_mount_dir[] = "/tmp/tmp.XXXXXX/oldroot.XXXXXX";
 
-	_TC_DEBUG("[child] remounting with MS_PRIVATE (mount_dir=%s)",
-	          mount_dir);
+	_TC_DEBUG("[child] remounting '/' with MS_PRIVATE");
 
-	_TC_MUST_P(!mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL), "mount",
-	           "couldn't remount '/' with MS_PRIVATE (mount_dir=%s)",
-	           mount_dir);
-
-	_TC_DEBUG("[child] making temporary directory to bind rootfs to");
-
-	_TC_MUST_P(mkdtemp(mount_dir) != NULL, "mkdtemp",
-	           "couldn't create temporary directory");
-
-	// mounting [src:proc->mount_dir, dst:tmp_dir]
-	if (mount(proc->rootfs, mount_dir, NULL, MS_BIND | MS_PRIVATE, NULL)) {
-		fprintf(stderr, "bind mount failed!\n");
-		return -1;
-	}
-
-	// Make inner_mount_dir's prefix be equal to mount_dir
-	// TODO errcheck the copying
-	memcpy(inner_mount_dir, mount_dir, sizeof(mount_dir) - 1);
-
-	// creating the temporary directory inside 'mount_dir' (tmp)
-	if (!mkdtemp(inner_mount_dir)) {
-		fprintf(stderr, "failed making the inner directory!\n");
-		return -1;
-	}
+	_TC_MUST_P_GO(!mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL),
+	              "mount", abort, "couldn't remount '/' with MS_PRIVATE");
+	_TC_MUST_P_GO(mkdtemp(mount_dir) != NULL, "mkdtemp", abort,
+	              "couldn't create temporary directory '%s'", mount_dir);
 
 	_TC_DEBUG(
-	  "[child] created temporary inner directory (inner_mount_dir=%s)",
-	  inner_mount_dir);
+	  "[child] mounting rootfs to temporary dir (rootfs=%s,mount_dir=%s)",
+	  proc->rootfs, mount_dir);
+
+	_TC_MUST_P_GO(
+	  !mount(proc->rootfs, mount_dir, NULL, MS_BIND | MS_PRIVATE, NULL),
+	  "mount", abort, "failed to mount (src=%s,dst=%s)", proc->rootfs,
+	  mount_dir);
+
+	memcpy(inner_mount_dir, mount_dir, sizeof(mount_dir) - 1);
+	_TC_MUST_P_GO(mkdtemp(inner_mount_dir), "mkdtemp", abort,
+	              "failed creating temporary inner dir %s",
+	              inner_mount_dir);
+
 	_TC_DEBUG("[child] pivoting root (new=%s,put_old=%s)", mount_dir,
 	          inner_mount_dir);
 
-	// moves the '/' of the process to the directory 'inner_mount_dir'
-	// and makes 'mount_dir' the new root filesystem.
-
-	if (tc_syscall_pivot_root(mount_dir, inner_mount_dir)) {
-		fprintf(stderr, "failed!\n");
-		return -1;
-	}
-	fprintf(stderr, "done.\n");
+	_TC_MUST_P_GO(!tc_syscall_pivot_root(mount_dir, inner_mount_dir),
+	              "pivot_root", abort,
+	              "couldn't pivot root (new=%s,put_old=%s)", mount_dir,
+	              inner_mount_dir);
 
 	char* old_root_dir = basename(inner_mount_dir);
 	char old_root[sizeof(inner_mount_dir) + 1] = { "/" };
 
 	strcpy(&old_root[1], old_root_dir);
+	_TC_DEBUG("[child] unmounting old root (old_root=%s)", old_root);
 
-	fprintf(stderr, "=> unmounting %s...", old_root);
 	if (chdir("/")) {
 		fprintf(stderr, "chdir failed! %m\n");
 		return -1;
 	}
+
 	if (umount2(old_root, MNT_DETACH)) {
 		fprintf(stderr, "umount failed! %m\n");
 		return -1;
 	}
+
 	if (rmdir(old_root)) {
 		fprintf(stderr, "rmdir failed! %m\n");
 		return -1;
 	}
+
 	fprintf(stderr, "done.\n");
 	return 0;
+
+abort:
+	_TC_INFO("[child] failed to set child mounts");
+	return 1;
 }
 
 // TODO improve socket communication with enum

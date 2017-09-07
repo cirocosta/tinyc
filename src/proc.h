@@ -54,7 +54,7 @@ typedef struct proc_t {
 	// roofs is the directory to be
 	// mounted as the rootfs inside the container
 	// as the '/'.
-	char rootfs[255];
+	char* rootfs;
 
 	// child_pid holds the pid of the child that
 	// has been created.

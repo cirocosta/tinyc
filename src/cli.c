@@ -2,11 +2,14 @@
 #include "./common.h"
 
 int
-tc_cli_parse(tc_cli_t* cli, int argc, __attribute__((unused)) char** argv)
+tc_cli_parse(tc_cli_t* cli, int argc, char** argv)
 {
 	int ndx;
 	char* current_arg;
 	size_t current_arg_len;
+
+	char* env[16] = { 0 };
+	int envc = 0;
 
 	if (!cli) {
 		return 1;
@@ -33,14 +36,26 @@ tc_cli_parse(tc_cli_t* cli, int argc, __attribute__((unused)) char** argv)
 			continue;
 		}
 
-		if (!strcmp(current_arg, TC_FLAG_ROOTFS.name)) {
-			cli->rootfs = current_arg;
+		if (strstr(current_arg, TC_FLAG_ROOTFS.name)) {
+			cli->rootfs = current_arg + TC_FLAG_ROOTFS.name_len + 1;
 			continue;
 		}
 
-		if (!strcmp(current_arg, TC_FLAG_ENV.name)) {
-			cli->envp[cli->envc++] = current_arg;
+		if (strstr(current_arg, TC_FLAG_ENV.name)) {
+			env[envc++] = current_arg + TC_FLAG_ENV.name_len + 1;
 			continue;
+		}
+	}
+
+	if (envc > 0) {
+		cli->envp = malloc(sizeof(cli->envp) * envc);
+		if (cli->envp == NULL) {
+			return 1;
+		}
+
+		cli->envc = envc;
+		for (int i = 0; i < envc; i++) {
+			cli->envp[i] = env[i];
 		}
 	}
 
@@ -62,4 +77,16 @@ tc_cli_help()
 		        flag->description);
 	}
 	fprintf(stderr, "\n");
+}
+
+void
+tc_cli_cleanup(tc_cli_t* cli)
+{
+	if (cli == NULL) {
+		return;
+	}
+
+	if (cli->envp != NULL) {
+		free(cli->envp);
+	}
 }
