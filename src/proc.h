@@ -84,6 +84,11 @@ static const int tc_proc_flags = CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWPID |
 /**
  *      TODO document this.
  */
+int tc_proc_init(tc_proc_t* proc);
+
+/**
+ *      TODO document this.
+ */
 int tc_proc_run(tc_proc_t* proc, int (*fn)(void*));
 
 /**

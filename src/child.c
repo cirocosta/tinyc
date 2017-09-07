@@ -121,10 +121,10 @@ tc_child(void* arg)
 	            "couldn't set capabilities");
 	// tc_child_syscalls();
 
-	if (close(proc->parent_ipc_socket)) {
-		fprintf(stderr, "close failed: %m\n");
-		return -1;
-	}
+	tc_proc_show(proc);
+
+	_TC_MUST_P_GO(!close(proc->parent_ipc_socket), "close", abort,
+	              "couldn't close parent fd %d", proc->parent_ipc_socket);
 
 	_TC_DEBUG("starting execution of process %s", proc->argv[0]);
 

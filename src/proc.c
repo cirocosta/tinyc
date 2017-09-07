@@ -1,9 +1,11 @@
 #include "./proc.h"
 
 int
-tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
+tc_proc_init(tc_proc_t* proc)
 {
 	int sockets[2] = { 0 };
+
+	_TC_DEBUG("initializing proc structure");
 
 	_TC_MUST_P_GO(
 	  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets)) == 0, "socketpair",
@@ -16,13 +18,34 @@ tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
 	  (fcntl(proc->parent_ipc_socket, F_SETFD, FD_CLOEXEC)) == 0, "fcntl",
 	  abort, "couldn't set FD_CLOEXEC bit on parent-socket");
 
+	_TC_DEBUG("socket pair set (parent=%d,child=%d)",
+	          proc->parent_ipc_socket, proc->child_ipc_socket);
+
 	_TC_MUST_P_GO((proc->stack = malloc(STACK_SIZE)), "malloc", abort,
 	              "couldn't allocate memory to container process stack");
 
+	_TC_DEBUG("process stack allocated (stack=%p)", proc->stack);
+
+	return 0;
+
+abort:
+	_TC_INFO("failed initializing proc structure");
+	return 1;
+}
+
+int
+tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
+{
+	_TC_DEBUG("starting to run process");
+
+	tc_proc_show(proc);
+
 	_TC_MUST_P_GO(
 	  (proc->child_pid = clone(child_fn, proc->stack + STACK_SIZE,
-	                           tc_proc_flags | SIGCHLD, &proc)) != -1,
+	                           tc_proc_flags | SIGCHLD, proc)) != -1,
 	  "clone", abort, "couldn't create child process");
+
+	_TC_DEBUG("waiting child from pid %d", proc->child_pid);
 
 	_TC_MUST_P_GO(waitpid(proc->child_pid, NULL, 0) != -1, "waitpid", abort,
 	              "failed waiting on child_pid %d", proc->child_pid);
@@ -30,6 +53,7 @@ tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
 	return 0;
 
 abort:
+	_TC_INFO("failed running proc process");
 	return 1;
 }
 

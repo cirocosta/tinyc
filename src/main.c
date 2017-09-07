@@ -38,6 +38,14 @@ main(int argc, char** argv)
 	tc_names_fill(proc.hostname, 255);
 	tc_proc_show(&proc);
 
+	err = tc_proc_init(&proc);
+	if (err) {
+		fprintf(stderr,
+		        "ERROR: Couldn't properly run the application.\n"
+		        "Aborting.");
+		goto abort;
+	}
+
 	err = tc_proc_run(&proc, tc_child);
 	if (err) {
 		fprintf(stderr,
