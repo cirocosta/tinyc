@@ -49,7 +49,7 @@ main(int argc, char** argv)
 		goto abort;
 	}
 
-	err = tc_proc_run(&proc, tc_child);
+	err = tc_proc_run(&proc, tc_child_main);
 	if (err) {
 		fprintf(stderr,
 		        "ERROR: Couldn't properly run the application.\n"

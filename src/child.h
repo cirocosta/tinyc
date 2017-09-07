@@ -51,8 +51,10 @@ int tc_child_mounts(tc_proc_t* config);
 
 int tc_child_capabilities();
 
-int tc_child(void* arg);
+int tc_child_main(void* arg);
 
 int tc_child_set_userns(tc_proc_t* config);
+
+int tc_child_mount_procfs();
 
 #endif

@@ -1,7 +1,7 @@
 #include "./child.h"
 
 int
-tc_child(void* arg)
+tc_child_main(void* arg)
 {
 	tc_proc_t* proc = arg;
 
@@ -10,6 +10,8 @@ tc_child(void* arg)
 	              proc->hostname);
 
 	_TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child mounts");
+
+	_TC_MUST_GO(!tc_child_mount_procfs(), abort, "couldn't mount procfs");
 
 	_TC_MUST_GO(!tc_child_set_userns(proc), abort, "couldn't set userns");
 
@@ -33,6 +35,22 @@ tc_child(void* arg)
 abort:
 	_TC_INFO("[child] failed to execute child");
 	tc_proc_cleanup(proc);
+	return 1;
+}
+
+int
+tc_child_mount_procfs()
+{
+	_TC_MUST_P_GO(!mount("none", "/", NULL, MS_REC | MS_PRIVATE, NULL),
+	              "mount", abort, "failed to mount 'none' in '/'");
+	_TC_MUST_P_GO(!mount("proc", "/proc", "proc",
+	                     MS_NOSUID | MS_NODEV | MS_NOEXEC, NULL),
+	              "mount", abort, "failed to mount 'proc' in '/proc'");
+
+	return 0;
+
+abort:
+	_TC_INFO("[child] failed to mount procfs");
 	return 1;
 }
 
