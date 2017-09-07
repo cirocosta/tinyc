@@ -1,27 +1,11 @@
-#include <fcntl.h>
-#include <grp.h>
-#include <linux/capability.h>
-#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/capability.h>
-#include <sys/mount.h>
-#include <sys/prctl.h>
-#include <sys/signal.h>
-#include <sys/socket.h>
-#include <sys/syscall.h>
 #include <sys/time.h>
-#include <unistd.h>
 
-// TODO this could come from a '='-separated
-//      configuration file.
-#define USERNS_OFFSET 10000
-#define USERNS_COUNT 2000
-
+#include "./child.h"
 #include "./cli.h"
 #include "./common.h"
-#include "./names-generator.h"
+#include "./names.h"
 #include "./proc.h"
 
 int
@@ -30,9 +14,6 @@ main(int argc, char** argv)
 	struct timeval time;
 	tc_cli_t cli = { 0 };
 	tc_proc_t proc = { 0 };
-	tc_tc_t program = {
-		.sockets = { 0 }, .err = 0,
-	};
 
 	if (tc_cli_parse(&cli, argc, argv)) {
 		tc_cli_help();
@@ -54,10 +35,11 @@ main(int argc, char** argv)
 	proc.argv = cli.argv;
 	proc.argc = cli.argc;
 
-	tc_fill_with_name(proc.hostname, 255);
+	tc_names_fill(proc.hostname, 255);
 	tc_proc_show(&proc);
-	tc_proc_run(&proc);
+	tc_proc_run(&proc, tc_child);
 
 	// TODO wait for the child process.
+
 	return 1;
 }

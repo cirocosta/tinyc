@@ -1,6 +1,6 @@
-#include "./names-generator.h"
+#include "./names.h"
 
-static const char* names_left[] =
+static const char* tc_names_left[] =
   {
     "admiring",   "adoring",  "affectionate",  "agitated",   "amazing",
     "angry",      "awesome",  "blissful",      "boring",     "brave",
@@ -23,7 +23,7 @@ static const char* names_left[] =
     "youthful",   "zealous",  "zen",
   };
 
-static const char* names_right[] =
+static const char* tc_names_right[] =
   { "albattani",   "allen",      "almeida",      "agnesi",        "archimedes",
     "ardinghelli", "aryabhata",  "austin",       "babbage",       "banach",
     "bardeen",     "bartik",     "bassi",        "beaver",        "bell",
@@ -56,15 +56,17 @@ static const char* names_right[] =
     "wescoff",     "wiles",      "williams",     "wilson",        "wing",
     "wozniak",     "wright",     "yalow",        "yonath" };
 
+static const int tc_len_names_left =
+  sizeof(tc_names_left) / sizeof(tc_names_left[0]);
+static const int tc_len_names_right =
+  sizeof(tc_names_right) / sizeof(tc_names_right[0]);
+
 int
 tc_fill_with_name(char* buff, size_t len)
 {
-	int len_names_left = sizeof(names_left) / sizeof(names_left[0]);
-	int len_names_right = sizeof(names_right) / sizeof(names_right[0]);
+	int left_ndx = rand() % tc_len_names_left;
+	int right_ndx = rand() % tc_len_names_right;
 
-	int left_ndx = rand() % len_names_left;
-	int right_ndx = rand() % len_names_right;
-
-	return snprintf(buff, len, "%s_%s", names_left[left_ndx],
-	                names_right[right_ndx]);
+	return snprintf(buff, len, "%s_%s", tc_names_left[left_ndx],
+	                tc_names_right[right_ndx]);
 }

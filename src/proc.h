@@ -3,6 +3,7 @@
 
 #define _GNU_SOURCE
 #include <fcntl.h>
+#include <linux/limits.h>
 #include <linux/sched.h>
 #include <sched.h>
 #include <stdio.h>
@@ -12,6 +13,11 @@
 #include <unistd.h>
 
 #include "./common.h"
+
+// TODO this could come from a '='-separated
+//      configuration file.
+#define USERNS_OFFSET 10000
+#define USERNS_COUNT 2000
 
 #define STACK_SIZE _TC_MB(1)
 
@@ -77,7 +83,7 @@ static const int tc_proc_flags = CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWPID |
 /**
  *      TODO document this.
  */
-int tc_proc_run(tc_proc_t* proc);
+int tc_proc_run(tc_proc_t* proc, int (*fn)(void*));
 
 /**
  *      dumps to 'stderr' the configuration that will

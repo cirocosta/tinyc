@@ -1,1 +1,2 @@
-child.o: src/child.c src/./child.h
+child.o: src/child.c src/./child.h src/././common.h src/././proc.h \
+ src/./././common.h

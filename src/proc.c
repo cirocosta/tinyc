@@ -1,7 +1,7 @@
 #include "./proc.h"
 
 int
-tc_proc_run(tc_proc_t* proc)
+tc_proc_run(tc_proc_t* proc, int (*fn)(void*))
 {
 	int sockets[2] = {
 		proc->parent_ipc_socket, proc->child_ipc_socket,
@@ -18,7 +18,7 @@ tc_proc_run(tc_proc_t* proc)
 	              "couldn't allocate memory to container process stack");
 
 	_TC_MUST_P_GO(
-	  (proc->child_pid = clone(tc_child, proc->stack + STACK_SIZE,
+	  (proc->child_pid = clone(fn, proc->stack + STACK_SIZE,
 	                           tc_proc_flags | SIGCHLD, &proc)) != -1,
 	  "clone", cleanup, "couldn't create child process");
 
