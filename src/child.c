@@ -1,11 +1,47 @@
 #include "./child.h"
 
 int
+tc_child(void* arg)
+{
+	tc_proc_t* proc = arg;
+
+	_TC_MUST_P_GO(!sethostname(proc->hostname, strlen(proc->hostname)),
+	              "sethostname", abort, "couldn't set hostname to %s",
+	              proc->hostname);
+
+	// _TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child
+	// mounts");
+	// tc_child_userns(proc)
+
+	_TC_MUST_GO(!tc_child_capabilities(), abort,
+	            "couldn't set capabilities");
+
+	// tc_child_syscalls();
+
+	tc_proc_show(proc);
+
+	_TC_MUST_P_GO(!close(proc->parent_ipc_socket), "close", abort,
+	              "couldn't close parent fd %d", proc->parent_ipc_socket);
+
+	_TC_DEBUG("[child] starting execution of process %s", proc->argv[0]);
+
+	_TC_MUST_P_GO(!execve(proc->argv[0], proc->argv, NULL), "execve", abort,
+	              "couldn't execute process %s", proc->argv[0]);
+
+	return 0;
+
+abort:
+	_TC_INFO("[child] failed to execute child");
+	tc_proc_cleanup(proc);
+	return 1;
+}
+
+int
 tc_child_capabilities()
 {
 	cap_t caps;
 
-	_TC_DEBUG("Dropping capabilities");
+	_TC_DEBUG("[child] dropping capabilities");
 
 	for (size_t i = 0; i < tc_child_dropped_capabilities_len; i++) {
 		_TC_MUST_P(
@@ -15,7 +51,7 @@ tc_child_capabilities()
 		  tc_child_dropped_capabilities[i]);
 	}
 
-	_TC_DEBUG("Setting inheritable capabilities");
+	_TC_DEBUG("[child] Setting inheritable capabilities");
 
 	_TC_MUST_P((caps = cap_get_proc()) != NULL, "cap_get_proc",
 	           "couldn't allocate proc capability state");
@@ -32,7 +68,7 @@ tc_child_capabilities()
 	_TC_MUST_P(!cap_free(caps), "cap_free",
 	           "couldn't release memory allocated for capabilities");
 
-	_TC_DEBUG("Capabilities dropped");
+	_TC_DEBUG("[child] capabilities dropped");
 	return 0;
 }
 
@@ -42,13 +78,14 @@ tc_child_mounts(tc_proc_t* config)
 	char mount_dir[] = "/tmp/tmp.XXXXXX";
 	char inner_mount_dir[] = "/tmp/tmp.XXXXXX/oldroot.XXXXXX";
 
-	_TC_DEBUG("remounting with MS_PRIVATE (mount_dir=%s)", mount_dir);
+	_TC_DEBUG("[child] remounting with MS_PRIVATE (mount_dir=%s)",
+	          mount_dir);
 
 	_TC_MUST_P(!mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL), "mount",
 	           "couldn't remount '/' with MS_PRIVATE (mount_dir=%s)",
 	           mount_dir);
 
-	_TC_DEBUG("making temporary directory to bind rootfs to");
+	_TC_DEBUG("[child] making temporary directory to bind rootfs to");
 
 	_TC_MUST_P(mkdtemp(mount_dir) != NULL, "mkdtemp",
 	           "couldn't create temporary directory");
@@ -70,9 +107,10 @@ tc_child_mounts(tc_proc_t* config)
 		return -1;
 	}
 
-	_TC_DEBUG("created temporary inner directory (inner_mount_dir=%s)",
-	          inner_mount_dir);
-	_TC_DEBUG("Pivoting root (new=%s,put_old=%s)", mount_dir,
+	_TC_DEBUG(
+	  "[child] created temporary inner directory (inner_mount_dir=%s)",
+	  inner_mount_dir);
+	_TC_DEBUG("[child] pivoting root (new=%s,put_old=%s)", mount_dir,
 	          inner_mount_dir);
 
 	// moves the '/' of the process to the directory 'inner_mount_dir'
@@ -106,38 +144,6 @@ tc_child_mounts(tc_proc_t* config)
 	return 0;
 }
 
-int
-tc_child(void* arg)
-{
-	tc_proc_t* proc = arg;
-
-	_TC_MUST_P_GO(!sethostname(proc->hostname, strlen(proc->hostname)),
-	              "sethostname", abort, "couldn't set hostname to %s",
-	              proc->hostname);
-	// _TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child
-	// mounts");
-	// tc_child_userns(proc)
-	_TC_MUST_GO(!tc_child_capabilities(), abort,
-	            "couldn't set capabilities");
-	// tc_child_syscalls();
-
-	tc_proc_show(proc);
-
-	_TC_MUST_P_GO(!close(proc->parent_ipc_socket), "close", abort,
-	              "couldn't close parent fd %d", proc->parent_ipc_socket);
-
-	_TC_DEBUG("starting execution of process %s", proc->argv[0]);
-
-	_TC_MUST_P_GO(!execve(proc->argv[0], proc->argv, NULL), "execve", abort,
-	              "couldn't execute process %s", proc->argv[0]);
-
-	return 0;
-
-abort:
-	close(proc->parent_ipc_socket);
-	return 1;
-}
-
 // TODO improve socket communication with enum
 //      to better handle information sharing.
 int
@@ -147,27 +153,30 @@ tc_child_set_userns(tc_proc_t* config)
 	int has_userns = !unshare(CLONE_NEWUSER);
 	gid_t gid = (gid_t)config->uid;
 
-	_TC_MUST_P(write(config->parent_ipc_socket, &has_userns,
-	                 sizeof(has_userns)) == sizeof(has_userns),
-	           "write", "failed to write to parent");
+	_TC_MUST_P_GO(write(config->parent_ipc_socket, &has_userns,
+	                    sizeof(has_userns)) == sizeof(has_userns),
+	              "write", abort, "failed to write to parent");
 
-	_TC_MUST_P(read(config->parent_ipc_socket, &result, sizeof(result)) ==
-	             sizeof(result),
-	           "read", "failed to read from parent");
+	_TC_MUST_P_GO(read(config->parent_ipc_socket, &result,
+	                   sizeof(result)) == sizeof(result),
+	              "read", abort, "failed to read from parent");
 
 	if (result != 0) {
 		return -1;
 	}
 
-	_TC_DEBUG("=> switching to uid %d / gid %d...", config->uid,
+	_TC_DEBUG("[child] switching to uid %d / gid %d...", config->uid,
 	          config->uid);
 
-	_TC_MUST_P((!setgroups(1, &gid)), "setgroups",
-	           "failed to set process user group");
-	_TC_MUST_P((!setresgid(config->uid, config->uid, config->uid)),
-	           "setresgid", "failed to set real gid");
-	_TC_MUST_P(!(setresuid(config->uid, config->uid, config->uid)),
-	           "setresuid", "failed to set real uid");
+	_TC_MUST_P_GO((!setgroups(1, &gid)), "setgroups", abort,
+	              "failed to set process user group");
+	_TC_MUST_P_GO((!setresgid(config->uid, config->uid, config->uid)),
+	              "setresgid", abort, "failed to set real gid");
+	_TC_MUST_P_GO(!(setresuid(config->uid, config->uid, config->uid)),
+	              "setresuid", abort, "failed to set real uid");
 
 	return 0;
+abort:
+	_TC_INFO("[child] failed to set child userns");
+	return 1;
 }

@@ -60,6 +60,15 @@ abort:
 void
 tc_proc_cleanup(tc_proc_t* proc)
 {
+	if (!proc) {
+		return;
+	}
+
+	if (proc->stack) {
+		free(proc->stack);
+		proc->stack = NULL;
+	}
+
 	if (proc->parent_ipc_socket > 0) {
 		close(proc->parent_ipc_socket);
 		proc->parent_ipc_socket = -1;
