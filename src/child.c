@@ -12,7 +12,7 @@ tc_child(void* arg)
 	// _TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child
 	// mounts");
 
-	_TC_MUST_GO(tc_child_set_userns(proc), abort, "couldn't set userns");
+	_TC_MUST_GO(!tc_child_set_userns(proc), abort, "couldn't set userns");
 
 	_TC_MUST_GO(!tc_child_capabilities(), abort,
 	            "couldn't set capabilities");
@@ -158,13 +158,19 @@ tc_child_set_userns(tc_proc_t* proc)
 	int has_userns = !unshare(CLONE_NEWUSER);
 	gid_t gid = (gid_t)proc->uid;
 
+	_TC_DEBUG("[child] writing userns to parent");
+
 	_TC_MUST_P_GO(write(proc->parent_ipc_socket, &has_userns,
 	                    sizeof(has_userns)) == sizeof(has_userns),
 	              "write", abort, "failed to write to parent");
 
+	_TC_DEBUG("[child] waiting parent");
+
 	_TC_MUST_P_GO(read(proc->parent_ipc_socket, &result, sizeof(result)) ==
 	                sizeof(result),
 	              "read", abort, "failed to read from parent");
+
+	_TC_DEBUG("[child] got response from parent - %d", result);
 
 	if (result != 0) {
 		return -1;

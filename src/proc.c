@@ -45,6 +45,9 @@ tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
 	                           tc_proc_flags | SIGCHLD, proc)) != -1,
 	  "clone", abort, "couldn't create child process");
 
+	_TC_MUST_GO(!tc_proc_handle_child_uid_remap(proc), abort,
+	            "failed performing userns remap");
+
 	_TC_DEBUG("waiting child from pid %d", proc->child_pid);
 
 	_TC_MUST_P_GO(waitpid(proc->child_pid, NULL, 0) != -1, "waitpid", abort,
@@ -60,6 +63,8 @@ abort:
 void
 tc_proc_cleanup(tc_proc_t* proc)
 {
+	_TC_DEBUG("performing proc cleanup");
+
 	if (!proc) {
 		return;
 	}
@@ -119,58 +124,70 @@ const static char* tc_proc_userns_files[] = {
 // TODO improve the communication pattern
 //      between child and parent.
 int
-tc_handle_child_uid_map(pid_t child_pid, int fd)
+tc_proc_handle_child_uid_remap(tc_proc_t* proc)
 {
-	int uid_map = 0;
+	int uid_map_fd = 0;
 	int has_userns = -1;
+	char path[PATH_MAX] = { 0 };
+	const char* file;
+	int ns_file_formatting_res;
+	const int ok = 0;
 
-	_TC_MUST_GO(
-	  (read(fd, &has_userns, sizeof(has_userns)) == sizeof(has_userns)),
-	  abort, "couldn't read userns config from child");
+	_TC_DEBUG("waiting for child readiness to handle userns remapping");
 
-	if (has_userns) {
-		char path[PATH_MAX] = { 0 };
-		const char* file;
-		int ns_file_formatting_res;
+	_TC_MUST_P_GO((read(proc->child_ipc_socket, &has_userns,
+	                    sizeof(has_userns)) == sizeof(has_userns)),
+	              "read", abort, "couldn't read userns config from child");
 
-		for (size_t ndx = 0; ndx < 2; ndx++) {
-			file = tc_proc_userns_files[ndx];
-
-			ns_file_formatting_res = snprintf(
-			  path, sizeof(*path), "/proc/%d/%s", child_pid, file);
-
-			_TC_MUST_GO(ns_file_formatting_res != -1, abort,
-			            "errored formating proc userns-map file %s",
-			            file);
-			_TC_MUST_GO(
-			  ns_file_formatting_res < (int)sizeof(path), abort,
-			  "got path too long formating proc userns-map file %s",
-			  file);
-
-			_TC_MUST_P_GO((uid_map = open(path, O_WRONLY)) != -1,
-			              "open", abort, "failed to open file %s",
-			              path);
-
-			_TC_MUST_GO(dprintf(uid_map, "0 %d %d\n", USERNS_OFFSET,
-			                    USERNS_COUNT) != -1,
-			            abort,
-			            "failed to write userns mapping to file %s",
-			            path);
-
-			close(uid_map);
-			uid_map = -1;
-		}
+	if (!has_userns) {
+		_TC_MUST_P_GO(
+		  write(proc->child_ipc_socket, 0, sizeof(int)) == sizeof(int),
+		  "write", abort, "failed writing back response to child");
+		return 0;
 	}
 
-	_TC_MUST_GO(write(fd, 0, sizeof(int)) == sizeof(int), abort,
-	            "failed writing back response to child");
+	_TC_DEBUG("starting userns remap");
+
+	for (size_t ndx = 0; ndx < 2; ndx++) {
+		file = tc_proc_userns_files[ndx];
+
+		ns_file_formatting_res = snprintf(path, PATH_MAX, "/proc/%d/%s",
+		                                  proc->child_pid, file);
+
+		_TC_MUST_GO(ns_file_formatting_res > -1, abort,
+		            "errored formating proc userns-map file %s", file);
+		_TC_MUST_GO(
+		  ns_file_formatting_res < (int)sizeof(path), abort,
+		  "got path too long formating proc userns-map file %s", file);
+
+		_TC_DEBUG("writing remapping to userns file %s", path);
+
+		_TC_MUST_P_GO((uid_map_fd = open(path, O_WRONLY)) != -1, "open",
+		              abort, "failed to open file %s", path);
+
+		_TC_MUST_GO(dprintf(uid_map_fd, "0 %d %d\n", USERNS_OFFSET,
+		                    USERNS_COUNT) != -1,
+		            abort, "failed to write userns mapping to file %s",
+		            path);
+
+		close(uid_map_fd);
+		uid_map_fd = -1;
+	}
+
+	_TC_DEBUG("finished userns remap");
+	_TC_DEBUG("writing to child");
+
+	_TC_MUST_P_GO(
+	  write(proc->child_ipc_socket, &ok, sizeof(int)) == sizeof(int),
+	  "write", abort, "failed writing back response to child (socket=%d)",
+	  proc->child_ipc_socket);
 
 	return 0;
 
 abort:
-	if (uid_map != -1) {
-		close(uid_map);
-		uid_map = -1;
+	if (uid_map_fd != -1) {
+		close(uid_map_fd);
+		uid_map_fd = -1;
 	}
 	return 1;
 }

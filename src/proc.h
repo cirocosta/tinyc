@@ -92,6 +92,11 @@ int tc_proc_init(tc_proc_t* proc);
 int tc_proc_run(tc_proc_t* proc, int (*fn)(void*));
 
 /**
+ *      TODO document this.
+ */
+int tc_proc_handle_child_uid_remap(tc_proc_t* proc);
+
+/**
  *      dumps to 'stderr' the configuration that will
  *      be used by the process to be spawned.
  */
