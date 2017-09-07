@@ -82,17 +82,25 @@ static const int tc_proc_flags = CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWPID |
                                  CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWUTS;
 
 /**
- *      TODO document this.
+ *      initializes the 'proc' structure, assigning
+ *      real socket file descriptors to parent and
+ *      child ipc as well as allocating a stack to
+ *      the child proccess.
  */
 int tc_proc_init(tc_proc_t* proc);
 
 /**
- *      TODO document this.
+ *      runs the child process whose entrypoint is specified
+ *      as a function (argument 'fn').
+ *
+ *      note.:  must have 'tc_proc_t' properly initialized
+ *              before.
  */
 int tc_proc_run(tc_proc_t* proc, int (*fn)(void*));
 
 /**
- *      TODO document this.
+ *      handles the userns remapping of the child from the
+ *      parent.
  */
 int tc_proc_handle_child_uid_remap(tc_proc_t* proc);
 
