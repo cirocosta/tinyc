@@ -1,47 +1,52 @@
 #include "./proc.h"
 
 int
-tc_proc_run(tc_proc_t* proc, int (*fn)(void*))
+tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
 {
-	int sockets[2] = {
-		proc->parent_ipc_socket, proc->child_ipc_socket,
-	};
+	int sockets[2] = { 0 };
 
-	_TC_MUST_P(
+	_TC_MUST_P_GO(
 	  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets)) == 0, "socketpair",
-	  "couldn't create socket pair for parent-child communication");
+	  abort, "couldn't create socket pair for parent-child communication");
 
-	_TC_MUST_P_GO((fcntl(sockets[0], F_SETFD, FD_CLOEXEC)) == 0, "fcntl",
-	              cleanup, "couldn't set FD_CLOEXEC bit");
+	proc->parent_ipc_socket = sockets[0];
+	proc->child_ipc_socket = sockets[1];
 
-	_TC_MUST_P_GO((proc->stack = malloc(STACK_SIZE)), "malloc", cleanup,
+	_TC_MUST_P_GO(
+	  (fcntl(proc->parent_ipc_socket, F_SETFD, FD_CLOEXEC)) == 0, "fcntl",
+	  abort, "couldn't set FD_CLOEXEC bit on parent-socket");
+
+	_TC_MUST_P_GO((proc->stack = malloc(STACK_SIZE)), "malloc", abort,
 	              "couldn't allocate memory to container process stack");
 
 	_TC_MUST_P_GO(
-	  (proc->child_pid = clone(fn, proc->stack + STACK_SIZE,
+	  (proc->child_pid = clone(child_fn, proc->stack + STACK_SIZE,
 	                           tc_proc_flags | SIGCHLD, &proc)) != -1,
-	  "clone", cleanup, "couldn't create child process");
+	  "clone", abort, "couldn't create child process");
+
+	_TC_MUST_P_GO(waitpid(proc->child_pid, NULL, 0) != -1, "waitpid", abort,
+	              "failed waiting on child_pid %d", proc->child_pid);
 
 	return 0;
 
-cleanup:
-	if (sockets[0]) {
-		close(sockets[0]);
-		sockets[1] = -1;
-	}
-
-	if (sockets[1]) {
-		close(sockets[1]);
-		sockets[1] = -1;
-	}
-
+abort:
 	return 1;
 }
 
-/**
- *      dumps to 'stderr' the configuration that will
- *      be used by the process to be spawned.
- */
+void
+tc_proc_cleanup(tc_proc_t* proc)
+{
+	if (proc->parent_ipc_socket > 0) {
+		close(proc->parent_ipc_socket);
+		proc->parent_ipc_socket = -1;
+	}
+
+	if (proc->child_ipc_socket > 0) {
+		close(proc->child_ipc_socket);
+		proc->child_ipc_socket = -1;
+	}
+}
+
 void
 tc_proc_show(tc_proc_t* proc)
 {
@@ -71,7 +76,10 @@ tc_proc_show(tc_proc_t* proc)
 	fprintf(stderr, "\n\n");
 }
 
-static char* tc_proc_userns_files[] = {
+/**
+ * name of the files to use to set the userns mapping.
+ */
+const static char* tc_proc_userns_files[] = {
 	"uid_map", "gid_map",
 };
 
@@ -89,7 +97,7 @@ tc_handle_child_uid_map(pid_t child_pid, int fd)
 
 	if (has_userns) {
 		char path[PATH_MAX] = { 0 };
-		char* file;
+		const char* file;
 		int ns_file_formatting_res;
 
 		for (size_t ndx = 0; ndx < 2; ndx++) {

@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 
@@ -14,6 +13,7 @@ main(int argc, char** argv)
 	struct timeval time;
 	tc_cli_t cli = { 0 };
 	tc_proc_t proc = { 0 };
+	int err = 0;
 
 	if (tc_cli_parse(&cli, argc, argv)) {
 		tc_cli_help();
@@ -37,9 +37,18 @@ main(int argc, char** argv)
 
 	tc_names_fill(proc.hostname, 255);
 	tc_proc_show(&proc);
-	tc_proc_run(&proc, tc_child);
 
-	// TODO wait for the child process.
+	err = tc_proc_run(&proc, tc_child);
+	if (err) {
+		fprintf(stderr,
+		        "ERROR: Couldn't properly run the application.\n"
+		        "Aborting.");
+		goto abort;
+	}
 
+	return 0;
+
+abort:
+	tc_proc_cleanup(&proc);
 	return 1;
 }

@@ -1,6 +1,6 @@
 CC 				?=	clang
 LIBS 			:=	-lcap
-DEFS 			:=
+DEFS 			:=  -DDEBUG
 INCLUDES		:=	-I/usr/include
 BIN 			:=	tinyc
 LIB 			:=	./src/libtinyc.a

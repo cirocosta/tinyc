@@ -10,6 +10,7 @@
 #include <sys/signal.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "./common.h"
@@ -90,5 +91,10 @@ int tc_proc_run(tc_proc_t* proc, int (*fn)(void*));
  *      be used by the process to be spawned.
  */
 void tc_proc_show(tc_proc_t* proc);
+
+/**
+ *      cleans resources that were allocated to 'proc'.
+ */
+void tc_proc_cleanup(tc_proc_t* proc);
 
 #endif

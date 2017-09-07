@@ -36,7 +36,7 @@ test_retrieves_retrieves_nothing_if_just_argv0()
 	};
 	int res = tc_cli_parse(&cli, argc, argv);
 
-	_TC_MUST(!res, "should have succeeded");
+	_TC_MUST(res == 1, "should have failed succeeded");
 	_TC_MUST(cli.argc == 0, "should've captured 0 arguments");
 	_TC_INFO("OK");
 }

@@ -126,10 +126,10 @@ tc_child(void* arg)
 		return -1;
 	}
 
-	if (execve(proc->argv[0], proc->argv, NULL)) {
-		fprintf(stderr, "execve failed! %m.\n");
-		return -1;
-	}
+	_TC_DEBUG("starting execution of process %s", proc->argv[0]);
+
+	_TC_MUST_P_GO(!execve(proc->argv[0], proc->argv, NULL), "execve", abort,
+	              "couldn't execute process %s", proc->argv[0]);
 
 	return 0;
 

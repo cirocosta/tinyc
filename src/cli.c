@@ -12,7 +12,7 @@ tc_cli_parse(tc_cli_t* cli, int argc, __attribute__((unused)) char** argv)
 		return 1;
 	}
 
-	if (argc < 1) {
+	if (argc < 2) {
 		return 1;
 	}
 
