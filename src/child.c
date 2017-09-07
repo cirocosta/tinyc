@@ -73,7 +73,7 @@ tc_child_capabilities()
 }
 
 int
-tc_child_mounts(tc_proc_t* config)
+tc_child_mounts(tc_proc_t* proc)
 {
 	char mount_dir[] = "/tmp/tmp.XXXXXX";
 	char inner_mount_dir[] = "/tmp/tmp.XXXXXX/oldroot.XXXXXX";
@@ -90,9 +90,8 @@ tc_child_mounts(tc_proc_t* config)
 	_TC_MUST_P(mkdtemp(mount_dir) != NULL, "mkdtemp",
 	           "couldn't create temporary directory");
 
-	// mounting [src:config->mount_dir, dst:tmp_dir]
-	if (mount(config->rootfs, mount_dir, NULL, MS_BIND | MS_PRIVATE,
-	          NULL)) {
+	// mounting [src:proc->mount_dir, dst:tmp_dir]
+	if (mount(proc->rootfs, mount_dir, NULL, MS_BIND | MS_PRIVATE, NULL)) {
 		fprintf(stderr, "bind mount failed!\n");
 		return -1;
 	}
@@ -147,32 +146,32 @@ tc_child_mounts(tc_proc_t* config)
 // TODO improve socket communication with enum
 //      to better handle information sharing.
 int
-tc_child_set_userns(tc_proc_t* config)
+tc_child_set_userns(tc_proc_t* proc)
 {
 	int result = 0;
 	int has_userns = !unshare(CLONE_NEWUSER);
-	gid_t gid = (gid_t)config->uid;
+	gid_t gid = (gid_t)proc->uid;
 
-	_TC_MUST_P_GO(write(config->parent_ipc_socket, &has_userns,
+	_TC_MUST_P_GO(write(proc->parent_ipc_socket, &has_userns,
 	                    sizeof(has_userns)) == sizeof(has_userns),
 	              "write", abort, "failed to write to parent");
 
-	_TC_MUST_P_GO(read(config->parent_ipc_socket, &result,
-	                   sizeof(result)) == sizeof(result),
+	_TC_MUST_P_GO(read(proc->parent_ipc_socket, &result, sizeof(result)) ==
+	                sizeof(result),
 	              "read", abort, "failed to read from parent");
 
 	if (result != 0) {
 		return -1;
 	}
 
-	_TC_DEBUG("[child] switching to uid %d / gid %d...", config->uid,
-	          config->uid);
+	_TC_DEBUG("[child] switching to uid %d / gid %d...", proc->uid,
+	          proc->uid);
 
 	_TC_MUST_P_GO((!setgroups(1, &gid)), "setgroups", abort,
 	              "failed to set process user group");
-	_TC_MUST_P_GO((!setresgid(config->uid, config->uid, config->uid)),
+	_TC_MUST_P_GO((!setresgid(proc->uid, proc->uid, proc->uid)),
 	              "setresgid", abort, "failed to set real gid");
-	_TC_MUST_P_GO(!(setresuid(config->uid, config->uid, config->uid)),
+	_TC_MUST_P_GO(!(setresuid(proc->uid, proc->uid, proc->uid)),
 	              "setresuid", abort, "failed to set real uid");
 
 	return 0;
