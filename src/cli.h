@@ -7,9 +7,9 @@
 #include <string.h>
 
 /**
- * Final configuration retrieved from the
- * CLI arguments with the proper type casting
- * already done.
+ *      Final configuration retrieved from the
+ *      CLI arguments with the proper type casting
+ *      already done.
  */
 typedef struct cli_t {
 	bool help;
@@ -19,9 +19,9 @@ typedef struct cli_t {
 } tc_cli_t;
 
 /**
- * Intermediate representation of a generic
- * flag that can be passed via CLI. It doesn't
- * perform any type casting.
+ *      Intermediate representation of a generic
+ *      flag that can be passed via CLI. It doesn't
+ *      perform any type casting.
  *
  *      -       'name', 'name_len', 'description'
  *              and 'description_len' are compile-time
@@ -46,22 +46,22 @@ static const tc_cli_flag_t TC_FLAG_HELP = {
 };
 
 /**
- * Available flags to retrieve values from the 'cli'.
+ *      Available flags to retrieve values from the 'cli'.
  */
 static const tc_cli_flag_t* tc_cli_flags[] = {
 	&TC_FLAG_HELP,
 };
 
 /**
- * Number of flags that 'tc_cli_flags' contain.
+ *      Number of flags that 'tc_cli_flags' contain.
  */
 static const int tc_cli_flags_len =
   sizeof(tc_cli_flags) / sizeof(tc_cli_flag_t*);
 
 /**
- * Top of the help message that is issued in
- * case of either CLI parsing failures or ask
- * for help'.
+ *      Top of the help message that is issued in
+ *      case of either CLI parsing failures or ask
+ *      for help'.
  */
 static const char tc_cli_msg_help_header[] =
   "\n"
@@ -71,23 +71,23 @@ static const char tc_cli_msg_help_header[] =
   "Usage:  tinyc [opts] cmd\n";
 
 /**
- * Parses the command line arguments and
- * modifies the provided 'tc_cli_t' struct based
- * on the arguments specified. 'tc_cli_t*' can be
- * passed already prefilled so that arguments can
- * be uses as 'default values'.
+ *      Parses the command line arguments and
+ *      modifies the provided 'tc_cli_t' struct based
+ *      on the arguments specified. 'tc_cli_t*' can be
+ *      passed already prefilled so that arguments can
+ *      be uses as 'default values'.
  *
- * In case of errors, non-zero is returned.
+ *      In case of errors, non-zero is returned.
  *
- * It expectes to reveice 'argc' and 'argv' right from
- * the CLI, which means that it expects 'argv[0]' to
- * container the 'tinyc' executable and then the rest
- * be the actual set of flags and command to execute.
+ *      It expectes to reveice 'argc' and 'argv' right from
+ *      the CLI, which means that it expects 'argv[0]' to
+ *      container the 'tinyc' executable and then the rest
+ *      be the actual set of flags and command to execute.
  */
 int tc_cli_parse(tc_cli_t*, int argc, char** argv);
 
 /**
- * Prints to 'stderr' the help message.
+ *      Prints to 'stderr' the help message.
  */
 void tc_cli_help();
 

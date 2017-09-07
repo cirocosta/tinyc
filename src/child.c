@@ -11,7 +11,8 @@ tc_child(void* arg)
 
 	// _TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child
 	// mounts");
-	// tc_child_userns(proc)
+
+	_TC_MUST_GO(tc_child_set_userns(proc), abort, "couldn't set userns");
 
 	_TC_MUST_GO(!tc_child_capabilities(), abort,
 	            "couldn't set capabilities");
@@ -44,32 +45,37 @@ tc_child_capabilities()
 	_TC_DEBUG("[child] dropping capabilities");
 
 	for (size_t i = 0; i < tc_child_dropped_capabilities_len; i++) {
-		_TC_MUST_P(
+		_TC_MUST_P_GO(
 		  prctl(PR_CAPBSET_DROP, tc_child_dropped_capabilities[i], 0, 0,
 		        0) != -1,
-		  "prctl", "Couldn't drop capability %d for the current proc",
+		  "prctl", abort,
+		  "Couldn't drop capability %d for the current proc",
 		  tc_child_dropped_capabilities[i]);
 	}
 
 	_TC_DEBUG("[child] Setting inheritable capabilities");
 
-	_TC_MUST_P((caps = cap_get_proc()) != NULL, "cap_get_proc",
-	           "couldn't allocate proc capability state");
+	_TC_MUST_P_GO((caps = cap_get_proc()) != NULL, "cap_get_proc", abort,
+	              "couldn't allocate proc capability state");
 
-	_TC_MUST_P(cap_set_flag(caps, CAP_INHERITABLE,
-	                        tc_child_dropped_capabilities_len,
-	                        tc_child_dropped_capabilities, CAP_CLEAR) != -1,
-	           "cap_set_flag", "couldn't set flag of desired"
-	                           " capabilities to inheritable");
+	_TC_MUST_P_GO(
+	  cap_set_flag(caps, CAP_INHERITABLE, tc_child_dropped_capabilities_len,
+	               tc_child_dropped_capabilities, CAP_CLEAR) != -1,
+	  "cap_set_flag", abort, "couldn't set flag of desired"
+	                         " capabilities to inheritable");
 
-	_TC_MUST_P(cap_set_proc(caps) != -1, "cap_set_proc",
-	           "couldn't set process capabilities from cap state");
+	_TC_MUST_P_GO(cap_set_proc(caps) != -1, "cap_set_proc", abort,
+	              "couldn't set process capabilities from cap state");
 
-	_TC_MUST_P(!cap_free(caps), "cap_free",
-	           "couldn't release memory allocated for capabilities");
+	_TC_MUST_P_GO(!cap_free(caps), "cap_free", abort,
+	              "couldn't release memory allocated for capabilities");
 
 	_TC_DEBUG("[child] capabilities dropped");
 	return 0;
+
+abort:
+	_TC_INFO("[child] failed to set child capabilities");
+	return 1;
 }
 
 int
