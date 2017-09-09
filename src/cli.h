@@ -13,6 +13,7 @@
  */
 typedef struct cli_t {
 	bool help;
+	bool privileged;
 	char* rootfs;
 	char** argv;
 	int argc;
@@ -47,6 +48,12 @@ static const tc_cli_flag_t TC_FLAG_HELP = {
 	.description = "shows this help message",
 };
 
+static const tc_cli_flag_t TC_FLAG_PRIVILEGED = {
+	.name = "--privileged",
+	.name_len = strlen("--privileged"),
+	.description = "disables capabilities and seccomp filtering",
+};
+
 static const tc_cli_flag_t TC_FLAG_ROOTFS = {
 	.name = "--rootfs",
 	.name_len = strlen("--rootfs"),
@@ -63,7 +70,8 @@ static const tc_cli_flag_t TC_FLAG_ENV = {
  *      Available flags to retrieve values from the 'cli'.
  */
 static const tc_cli_flag_t* tc_cli_flags[] = { &TC_FLAG_HELP, &TC_FLAG_ROOTFS,
-	                                       &TC_FLAG_ENV };
+	                                       &TC_FLAG_ENV,
+	                                       &TC_FLAG_PRIVILEGED };
 
 /**
  *      Number of flags that 'tc_cli_flags' contain.
@@ -82,6 +90,12 @@ static const char tc_cli_msg_help_header[] =
   "Copyright 2017 - Ciro S. Costa <ciro.costa@liferay.com>\n"
   "\n"
   "Usage:  tinyc [opts] cmd\n";
+
+static const char tc_cli_msg_help_footer[] =
+  "Examples:\n"
+  "\n"
+  "    sudo tinyc --privileged --rootfs=/tmp/busybox /bin/sh\n"
+  "\n";
 
 /**
  *      Parses the command line arguments and

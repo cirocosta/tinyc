@@ -36,6 +36,11 @@ tc_cli_parse(tc_cli_t* cli, int argc, char** argv)
 			continue;
 		}
 
+		if (!strcmp(current_arg, TC_FLAG_PRIVILEGED.name)) {
+			cli->privileged = true;
+			continue;
+		}
+
 		if (strstr(current_arg, TC_FLAG_ROOTFS.name)) {
 			cli->rootfs = current_arg + TC_FLAG_ROOTFS.name_len + 1;
 			continue;
@@ -77,6 +82,7 @@ tc_cli_help()
 		        flag->description);
 	}
 	fprintf(stderr, "\n");
+	fprintf(stderr, tc_cli_msg_help_footer);
 }
 
 void

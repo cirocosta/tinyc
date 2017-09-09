@@ -45,8 +45,10 @@ tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
 	                           tc_proc_flags | SIGCHLD, proc)) != -1,
 	  "clone", abort, "couldn't create child process");
 
-	_TC_MUST_GO(!tc_proc_handle_child_uid_remap(proc), abort,
-	            "failed performing userns remap");
+	if (proc->disable_userns_remap == false) {
+		_TC_MUST_GO(!tc_proc_handle_child_uid_remap(proc), abort,
+		            "failed performing userns remap");
+	}
 
 	_TC_DEBUG("waiting child from pid %d", proc->child_pid);
 
@@ -89,17 +91,21 @@ void
 tc_proc_show(tc_proc_t* proc)
 {
 	fprintf(stderr, "Configuration:\n");
-	fprintf(stderr, "  uid:                 %d\n"
-	                "  argc:                %d\n"
-	                "  envpc:               %d\n"
-	                "  hostname:            %s\n"
-	                "  rootfs:              %s\n"
-	                "  child_pid:           %d\n"
-	                "  parent_ipc_socket:   %d\n"
-	                "  child_ipc_socket:    %d\n",
+	fprintf(stderr, "  uid:                   %d\n"
+	                "  argc:                  %d\n"
+	                "  envpc:                 %d\n"
+	                "  hostname:              %s\n"
+	                "  rootfs:                %s\n"
+	                "  child_pid:             %d\n"
+	                "  parent_ipc_socket:     %d\n"
+	                "  child_ipc_socket:      %d\n"
+	                "  disable_seccomp:       %d\n"
+	                "  disable_capabilities:  %d\n"
+	                "  disable_userns_remap:  %d\n",
 	        proc->uid, proc->argc, proc->envpc, proc->hostname,
 	        proc->rootfs, proc->child_pid, proc->parent_ipc_socket,
-	        proc->child_ipc_socket);
+	        proc->child_ipc_socket, proc->disable_seccomp,
+	        proc->disable_capabilities, proc->disable_userns_remap);
 
 	fprintf(stderr, "  argv:           ");
 	for (int i = 0; i < proc->argc; i++) {

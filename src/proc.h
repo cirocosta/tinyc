@@ -6,6 +6,7 @@
 #include <linux/limits.h>
 #include <linux/sched.h>
 #include <sched.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <sys/signal.h>
 #include <sys/socket.h>
@@ -27,6 +28,15 @@
  *      of the container.
  */
 typedef struct proc_t {
+	// disables syscall filtering.
+	bool disable_seccomp;
+
+	// disables setting of capabilities.
+	bool disable_capabilities;
+
+	// disables userns remapping
+	bool disable_userns_remap;
+
 	// user id (userns-remap).
 	uid_t uid;
 

@@ -9,19 +9,28 @@ tc_child_main(void* arg)
 	              "sethostname", abort, "couldn't set hostname to %s",
 	              proc->hostname);
 
-	_TC_MUST_GO(!tc_child_mounts(proc), abort, "couldn't set child mounts");
+	if (proc->rootfs && strlen(proc->rootfs) > 0) {
+		_TC_MUST_GO(!tc_child_mounts(proc), abort,
+		            "couldn't set child mounts");
 
-	_TC_MUST_GO(!tc_child_mount_procfs(), abort, "couldn't mount procfs");
+		_TC_MUST_GO(!tc_child_mount_procfs(), abort,
+		            "couldn't mount procfs");
+	}
 
-	_TC_MUST_GO(!tc_child_set_userns(proc), abort, "couldn't set userns");
+	if (proc->disable_userns_remap == false) {
+		_TC_MUST_GO(!tc_child_set_userns(proc), abort,
+		            "couldn't set userns");
+	}
 
-	_TC_MUST_GO(!tc_child_capabilities(), abort,
-	            "couldn't set capabilities");
+	if (proc->disable_capabilities == false) {
+		_TC_MUST_GO(!tc_child_capabilities(), abort,
+		            "couldn't set capabilities");
+	}
 
-	_TC_MUST_GO(!tc_child_block_syscalls(), abort,
-	            "couldn't block syscalls via seccomp");
-
-	tc_proc_show(proc);
+	if (proc->disable_seccomp == false) {
+		_TC_MUST_GO(!tc_child_block_syscalls(), abort,
+		            "couldn't block syscalls via seccomp");
+	}
 
 	_TC_MUST_P_GO(!close(proc->parent_ipc_socket), "close", abort,
 	              "couldn't close parent fd %d", proc->parent_ipc_socket);
