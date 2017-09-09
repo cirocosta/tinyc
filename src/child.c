@@ -43,29 +43,34 @@ int
 tc_child_block_syscalls()
 {
 	scmp_filter_ctx ctx = NULL;
+	tc_child_seccomp_mask const* mask;
 
 	_TC_DEBUG("[child] starting filtering of syscalls");
 
 	_TC_MUST_P_GO((ctx = seccomp_init(SCMP_ACT_ALLOW)), "seccomp_init",
 	              abort, "couldn't initialize seccomp context");
 
-	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(chmod), 1,
-	                 SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID));
-	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(chmod), 1,
-	                 SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID));
-	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fchmod), 1,
-	                 SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID));
-	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fchmod), 1,
-	                 SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID));
-	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fchmodat), 1,
-	                 SCMP_A2(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID));
-	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fchmodat), 1,
-	                 SCMP_A2(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID));
+	for (size_t i = 0; i < tc_child_seccomp_masks_len; i++) {
+		mask = &tc_child_seccomp_masks[i];
+		_TC_MUST_P_GO(
+		  !seccomp_rule_add(ctx, mask->action, mask->syscall,
+		                    mask->arg_cnt, mask->cmp),
+		  "seccomp_rule_add", abort, "couldn't add seccomp rule");
+	}
+
+	_TC_MUST_P_GO(!seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 0),
+	              "seccomp_attr_set", abort, "couldn't set seccomp attr");
+	_TC_MUST_P_GO(!seccomp_load(ctx), "seccomp_load", abort,
+	              "couldn't load seccomp rule");
 
 	return 0;
 
 abort:
 	_TC_INFO("[child] failed to block syscalls via seccomp");
+	if (ctx) {
+		seccomp_release(ctx);
+	}
+
 	return 1;
 }
 
