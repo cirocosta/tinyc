@@ -18,7 +18,8 @@ tc_child_main(void* arg)
 	_TC_MUST_GO(!tc_child_capabilities(), abort,
 	            "couldn't set capabilities");
 
-	// tc_child_syscalls();
+	_TC_MUST_GO(!tc_child_block_syscalls(), abort,
+	            "couldn't block syscalls via seccomp");
 
 	tc_proc_show(proc);
 
@@ -35,6 +36,36 @@ tc_child_main(void* arg)
 abort:
 	_TC_INFO("[child] failed to execute child");
 	tc_proc_cleanup(proc);
+	return 1;
+}
+
+int
+tc_child_block_syscalls()
+{
+	scmp_filter_ctx ctx = NULL;
+
+	_TC_DEBUG("[child] starting filtering of syscalls");
+
+	_TC_MUST_P_GO((ctx = seccomp_init(SCMP_ACT_ALLOW)), "seccomp_init",
+	              abort, "couldn't initialize seccomp context");
+
+	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(chmod), 1,
+	                 SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID));
+	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(chmod), 1,
+	                 SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID));
+	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fchmod), 1,
+	                 SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID));
+	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fchmod), 1,
+	                 SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID));
+	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fchmodat), 1,
+	                 SCMP_A2(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID));
+	seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(fchmodat), 1,
+	                 SCMP_A2(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID));
+
+	return 0;
+
+abort:
+	_TC_INFO("[child] failed to block syscalls via seccomp");
 	return 1;
 }
 

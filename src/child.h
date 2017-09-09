@@ -3,8 +3,10 @@
 
 #define _GNU_SOURCE
 
+#include <errno.h>
 #include <grp.h>
 #include <libgen.h>
+#include <seccomp.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/capability.h>
@@ -43,6 +45,13 @@ static const int tc_child_dropped_capabilities[] = {
 	CAP_WAKE_ALARM,   // interfere with suspended state
 };
 
+typedef struct child_seccomp_mas {
+	uint32_t action;
+	int syscall;
+	unsigned int arg_cnt;
+	struct scmp_arg_cmp cmp;
+} tc_child_seccomp_mask;
+
 static const size_t tc_child_dropped_capabilities_len =
   sizeof(tc_child_dropped_capabilities) /
   sizeof(*tc_child_dropped_capabilities);
@@ -52,6 +61,8 @@ int tc_child_mounts(tc_proc_t* config);
 int tc_child_capabilities();
 
 int tc_child_main(void* arg);
+
+int tc_child_block_syscalls();
 
 int tc_child_set_userns(tc_proc_t* config);
 
