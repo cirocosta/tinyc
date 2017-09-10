@@ -8,6 +8,8 @@
 #include <sched.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/resource.h>
 #include <sys/signal.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -191,5 +193,23 @@ void tc_proc_cleanup(tc_proc_t* proc);
  *      checks if a directory exists.
  */
 int tc_proc_dir_exists(char* dir);
+
+/**
+ *      cleans the files and directories created in cgroupfs
+ *      corresponding to this process (identified by 'hostname').
+ */
+int tc_proc_clean_cgroups(tc_proc_t* proc);
+
+/**
+ *      sets cgroup configurations by creating the
+ *      corresponding group in each desired subsystem
+ *      and then setting the values as desired.
+ */
+int tc_proc_set_cgroups(tc_proc_t* proc);
+
+/**
+ *      sets resource limits for the cloned process.
+ */
+int tc_proc_set_rlimits();
 
 #endif

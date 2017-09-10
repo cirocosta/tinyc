@@ -49,6 +49,136 @@ abort:
 }
 
 int
+tc_proc_set_cgroups(tc_proc_t* proc)
+{
+	char path[PATH_MAX] = { 0 };
+	char dir[PATH_MAX] = { 0 };
+	int fd = 0;
+
+	tc_proc_cgroup_setting** setting;
+	tc_proc_cgroup const** cgrp;
+
+	_TC_INFO("configuring cgroups");
+
+	for (cgrp = tc_proc_cgroups; *cgrp; cgrp++) {
+		_TC_INFO("[cgroups] configuring %s", (*cgrp)->subsystem);
+
+		// TODO separate this into a function
+		if (snprintf(dir, sizeof(dir), "/sys/fs/cgroup/%s/%s",
+		             (*cgrp)->subsystem, proc->hostname) == -1) {
+			goto abort;
+		}
+
+		if (mkdir(dir, S_IRUSR | S_IWUSR | S_IXUSR)) {
+			fprintf(stderr, "mkdir %s failed: %m\n", dir);
+			goto abort;
+		}
+
+		for (setting = (*cgrp)->settings; *setting; setting++) {
+			_TC_INFO("[cgroups] configuring property %s",
+			         (*setting)->name);
+
+			// TODO separate this into a function
+			if (snprintf(path, sizeof(path), "%s/%s", dir,
+			             (*setting)->name) == -1) {
+				fprintf(stderr, "snprintf failed: %m\n");
+				goto abort;
+			}
+			if ((fd = open(path, O_WRONLY)) == -1) {
+				fprintf(stderr, "opening %s failed: %m\n",
+				        path);
+				goto abort;
+			}
+			if (write(fd, (*setting)->value,
+			          strlen((*setting)->value)) == -1) {
+				fprintf(stderr, "writing to %s failed: %m\n",
+				        path);
+				close(fd);
+				goto abort;
+			}
+
+			close(fd);
+			memset(path, 0, PATH_MAX);
+		}
+
+		memset(dir, 0, PATH_MAX);
+	}
+
+	return 0;
+
+abort:
+	_TC_INFO("failed configuring cgroups");
+	return 1;
+}
+
+int
+tc_proc_clean_cgroups(tc_proc_t* proc)
+{
+	tc_proc_cgroup const** cgrp;
+	char dir[PATH_MAX] = { 0 };
+	char task[PATH_MAX] = { 0 };
+	int task_fd = 0;
+
+	_TC_INFO("cleaning cgroups");
+
+	for (cgrp = tc_proc_cgroups; *cgrp; cgrp++) {
+		if (snprintf(dir, sizeof(dir), "/sys/fs/cgroup/%s/%s",
+		             (*cgrp)->subsystem, proc->hostname) == -1 ||
+		    snprintf(task, sizeof(task), "/sys/fs/cgroup/%s/tasks",
+		             (*cgrp)->subsystem) == -1) {
+			fprintf(stderr, "snprintf failed: %m\n");
+			goto abort;
+		}
+		if ((task_fd = open(task, O_WRONLY)) == -1) {
+			fprintf(stderr, "opening %s failed: %m\n", task);
+			goto abort;
+		}
+		if (write(task_fd, "0", 2) == -1) {
+			fprintf(stderr, "writing to %s failed: %m\n", task);
+			close(task_fd);
+			goto abort;
+		}
+
+		close(task_fd);
+		if (rmdir(dir)) {
+			fprintf(stderr, "rmdir %s failed: %m", dir);
+			goto abort;
+		}
+
+		memset(dir, 0, PATH_MAX);
+		memset(task, 0, PATH_MAX);
+	}
+
+	return 0;
+
+abort:
+	_TC_INFO("failed cleaning cgroups");
+	return 1;
+}
+
+int
+tc_proc_set_rlimits()
+{
+	_TC_INFO("setting resource limits");
+
+	struct rlimit limits = {
+		.rlim_max = TC_DEFAULT_RLIMIT_NOFILE_COUNT,
+		.rlim_cur = TC_DEFAULT_RLIMIT_NOFILE_COUNT,
+	};
+
+	if (setrlimit(RLIMIT_NOFILE, &limits)) {
+		fprintf(stderr, "failed: %m\n");
+		goto abort;
+	}
+
+	return 0;
+
+abort:
+	_TC_INFO("failed setting resource limits");
+	return 1;
+}
+
+int
 tc_proc_dir_exists(char* dir)
 {
 	struct stat s = { 0 };
