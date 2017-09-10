@@ -35,7 +35,8 @@ tc_proc_init(tc_proc_t* proc)
 		          proc->parent_ipc_socket, proc->child_ipc_socket);
 	}
 
-	_TC_MUST_P_GO((proc->stack = malloc(STACK_SIZE)), "malloc", abort,
+	_TC_MUST_P_GO((proc->stack = malloc(TC_DEFAULT_STACK_SIZE)), "malloc",
+	              abort,
 	              "couldn't allocate memory to container process stack");
 
 	_TC_DEBUG("process stack allocated (stack=%p)", proc->stack);
@@ -71,10 +72,10 @@ tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
 
 	tc_proc_show(proc);
 
-	_TC_MUST_P_GO(
-	  (proc->child_pid = clone(child_fn, proc->stack + STACK_SIZE,
-	                           tc_proc_flags | SIGCHLD, proc)) != -1,
-	  "clone", abort, "couldn't create child process");
+	_TC_MUST_P_GO((proc->child_pid =
+	                 clone(child_fn, proc->stack + TC_DEFAULT_STACK_SIZE,
+	                       tc_proc_flags | SIGCHLD, proc)) != -1,
+	              "clone", abort, "couldn't create child process");
 
 	if (proc->disable_userns_remap == false) {
 		_TC_MUST_GO(!tc_proc_handle_child_uid_remap(proc), abort,
@@ -202,10 +203,10 @@ tc_proc_handle_child_uid_remap(tc_proc_t* proc)
 		_TC_MUST_P_GO((uid_map_fd = open(path, O_WRONLY)) != -1, "open",
 		              abort, "failed to open file %s", path);
 
-		_TC_MUST_GO(dprintf(uid_map_fd, "0 %d %d\n", USERNS_OFFSET,
-		                    USERNS_COUNT) != -1,
-		            abort, "failed to write userns mapping to file %s",
-		            path);
+		_TC_MUST_GO(
+		  dprintf(uid_map_fd, "0 %d %d\n", TC_DEFAULT_USERNS_OFFSET,
+		          TC_DEFAULT_USERNS_COUNT) != -1,
+		  abort, "failed to write userns mapping to file %s", path);
 
 		close(uid_map_fd);
 		uid_map_fd = -1;

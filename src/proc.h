@@ -17,12 +17,18 @@
 
 #include "./common.h"
 
-// TODO this could come from a '='-separated
-//      configuration file.
-#define USERNS_OFFSET 10000
-#define USERNS_COUNT 2000
+#define TC_DEFAULT_USERNS_OFFSET 10000
+#define TC_DEFAULT_USERNS_COUNT 2000
 
-#define STACK_SIZE _TC_MB(1)
+#define TC_DEFAULT_CGROUP_MEMORY "1073741824"
+#define TC_DEFAULT_CGROUP_KERNEL_MEMORY "1073741824"
+#define TC_DEFAULT_CGROUP_CPU_SHARES "256"
+#define TC_DEFAULT_CGROUP_PIDS "64"
+#define TC_DEFAULT_CGROUP_BLKIO_WEIGHT "10"
+
+#define TC_DEFAULT_RLIMIT_NOFILE_COUNT 64
+
+#define TC_DEFAULT_STACK_SIZE _TC_MB(1)
 
 /**
  *      tc_proc_t encapsulates the configurations
@@ -83,6 +89,61 @@ typedef struct proc_t {
 	// to the container init process.
 	char* stack;
 } tc_proc_t;
+
+/**
+ *      key-value representation of a setting that a
+ *      specific part of a cgroup subsystem can take.
+ */
+typedef struct proc_cgroup_setting {
+	char name[256];
+	char value[256];
+} tc_proc_cgroup_setting;
+
+/**
+ *      aggregation of all the settings that a cgroup
+ *      subsystem can take
+ */
+typedef struct proc_cgroup {
+	char subsystem[256];
+	tc_proc_cgroup_setting** settings;
+} tc_proc_cgroup;
+
+/**
+ *      list of all the cgroup substystem with their
+ *      default settings.
+ */
+static const tc_proc_cgroup* tc_proc_cgroups[] =
+  { &(tc_proc_cgroup){
+      .subsystem = "memory",
+      .settings =
+	(tc_proc_cgroup_setting* []){
+	  &(tc_proc_cgroup_setting){.name = "memory.limit_in_bytes",
+	                            .value = TC_DEFAULT_CGROUP_MEMORY },
+	  &(tc_proc_cgroup_setting){.name = "memory.kmem.limit_in_bytes",
+	                            .value = TC_DEFAULT_CGROUP_MEMORY },
+	  &(tc_proc_cgroup_setting){.name = "tasks", .value = "0" }, NULL } },
+    &(tc_proc_cgroup){
+      .subsystem = "cpu",
+      .settings =
+	(tc_proc_cgroup_setting* []){
+	  &(tc_proc_cgroup_setting){.name = "cpu.shares",
+	                            .value = TC_DEFAULT_CGROUP_CPU_SHARES },
+	  &(tc_proc_cgroup_setting){.name = "tasks", .value = "0" }, NULL } },
+    &(tc_proc_cgroup){
+      .subsystem = "pids",
+      .settings =
+	(tc_proc_cgroup_setting* []){
+	  &(tc_proc_cgroup_setting){.name = "pids.max",
+	                            .value = TC_DEFAULT_CGROUP_PIDS },
+	  &(tc_proc_cgroup_setting){.name = "tasks", .value = "0" }, NULL } },
+    &(tc_proc_cgroup){
+      .subsystem = "blkio",
+      .settings =
+	(tc_proc_cgroup_setting* []){
+	  &(tc_proc_cgroup_setting){.name = "blkio.weight",
+	                            .value = TC_DEFAULT_CGROUP_BLKIO_WEIGHT },
+	  &(tc_proc_cgroup_setting){.name = "tasks", .value = "0" }, NULL } },
+    NULL };
 
 /**
  *      tc_proc_flags is a bitset-ted int that is
