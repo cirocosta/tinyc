@@ -4,22 +4,36 @@ int
 tc_proc_init(tc_proc_t* proc)
 {
 	int sockets[2] = { 0 };
+	int err = 0;
 
 	_TC_DEBUG("initializing proc structure");
 
-	_TC_MUST_P_GO(
-	  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets)) == 0, "socketpair",
-	  abort, "couldn't create socket pair for parent-child communication");
+	if (proc->rootfs != NULL) {
+		err = tc_proc_dir_exists(proc->rootfs);
+		if (err) {
+			_TC_INFO("specified rootfs does not exists - %s",
+			         proc->rootfs);
+			goto abort;
+		}
+	}
 
-	proc->parent_ipc_socket = sockets[0];
-	proc->child_ipc_socket = sockets[1];
+	if (!proc->disable_userns_remap) {
+		_TC_MUST_P_GO(
+		  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets)) == 0,
+		  "socketpair", abort,
+		  "couldn't create socket pair for parent-child communication");
 
-	_TC_MUST_P_GO(
-	  (fcntl(proc->parent_ipc_socket, F_SETFD, FD_CLOEXEC)) == 0, "fcntl",
-	  abort, "couldn't set FD_CLOEXEC bit on parent-socket");
+		proc->parent_ipc_socket = sockets[0];
+		proc->child_ipc_socket = sockets[1];
 
-	_TC_DEBUG("socket pair set (parent=%d,child=%d)",
-	          proc->parent_ipc_socket, proc->child_ipc_socket);
+		_TC_MUST_P_GO(
+		  (fcntl(proc->parent_ipc_socket, F_SETFD, FD_CLOEXEC)) == 0,
+		  "fcntl", abort,
+		  "couldn't set FD_CLOEXEC bit on parent-socket");
+
+		_TC_DEBUG("socket pair set (parent=%d,child=%d)",
+		          proc->parent_ipc_socket, proc->child_ipc_socket);
+	}
 
 	_TC_MUST_P_GO((proc->stack = malloc(STACK_SIZE)), "malloc", abort,
 	              "couldn't allocate memory to container process stack");
@@ -30,6 +44,23 @@ tc_proc_init(tc_proc_t* proc)
 
 abort:
 	_TC_INFO("failed initializing proc structure");
+	return 1;
+}
+
+int
+tc_proc_dir_exists(char* dir)
+{
+	struct stat s = { 0 };
+	int err = stat(dir, &s);
+
+	if (err) {
+		return 1;
+	}
+
+	if (s.st_mode & S_IFDIR) {
+		return 0;
+	}
+
 	return 1;
 }
 

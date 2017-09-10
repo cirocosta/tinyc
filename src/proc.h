@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <sys/signal.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -124,5 +125,10 @@ void tc_proc_show(tc_proc_t* proc);
  *      cleans resources that were allocated to 'proc'.
  */
 void tc_proc_cleanup(tc_proc_t* proc);
+
+/**
+ *      checks if a directory exists.
+ */
+int tc_proc_dir_exists(char* dir);
 
 #endif
