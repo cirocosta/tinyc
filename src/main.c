@@ -58,6 +58,9 @@ main(int argc, char** argv)
 		goto abort;
 	}
 
+	tc_cli_cleanup(&cli);
+	tc_proc_cleanup(&proc);
+
 	return 0;
 
 abort:

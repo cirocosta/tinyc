@@ -3,7 +3,6 @@
 int
 tc_proc_init(tc_proc_t* proc)
 {
-	int sockets[2] = { 0 };
 	int err = 0;
 
 	_TC_DEBUG("initializing proc structure");
@@ -18,21 +17,17 @@ tc_proc_init(tc_proc_t* proc)
 	}
 
 	if (proc->disable_userns_remap == false) {
-		_TC_MUST_P_GO(
-		  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets)) == 0,
-		  "socketpair", abort,
-		  "couldn't create socket pair for parent-child communication");
+		err = tc_proc_init_ipc(proc);
+		if (err) {
+			goto abort;
+		}
+	}
 
-		proc->parent_ipc_socket = sockets[0];
-		proc->child_ipc_socket = sockets[1];
-
-		_TC_MUST_P_GO(
-		  (fcntl(proc->parent_ipc_socket, F_SETFD, FD_CLOEXEC)) == 0,
-		  "fcntl", abort,
-		  "couldn't set FD_CLOEXEC bit on parent-socket");
-
-		_TC_DEBUG("socket pair set (parent=%d,child=%d)",
-		          proc->parent_ipc_socket, proc->child_ipc_socket);
+	if (proc->disable_cgroups == false) {
+		err = tc_proc_set_cgroups(proc);
+		if (err) {
+			goto abort;
+		}
 	}
 
 	_TC_MUST_P_GO((proc->stack = malloc(TC_DEFAULT_STACK_SIZE)), "malloc",
@@ -49,6 +44,31 @@ abort:
 }
 
 int
+tc_proc_init_ipc(tc_proc_t* proc)
+{
+	int sockets[2] = { 0 };
+
+	_TC_MUST_P_GO(
+	  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets)) == 0, "socketpair",
+	  abort, "couldn't create socket pair for parent-child communication");
+
+	proc->parent_ipc_socket = sockets[0];
+	proc->child_ipc_socket = sockets[1];
+
+	_TC_MUST_P_GO(
+	  (fcntl(proc->parent_ipc_socket, F_SETFD, FD_CLOEXEC)) == 0, "fcntl",
+	  abort, "couldn't set FD_CLOEXEC bit on parent-socket");
+
+	_TC_DEBUG("socket pair set (parent=%d,child=%d)",
+	          proc->parent_ipc_socket, proc->child_ipc_socket);
+	return 0;
+
+abort:
+	_TC_INFO("failed initializing ipc components");
+	return 1;
+}
+
+int
 tc_proc_set_cgroups(tc_proc_t* proc)
 {
 	char path[PATH_MAX] = { 0 };
@@ -56,11 +76,11 @@ tc_proc_set_cgroups(tc_proc_t* proc)
 	int fd = 0;
 
 	tc_proc_cgroup_setting** setting;
-	tc_proc_cgroup const** cgrp;
+	tc_proc_cgroup const** cgrp = tc_proc_cgroups;
 
 	_TC_INFO("configuring cgroups");
 
-	for (cgrp = tc_proc_cgroups; *cgrp; cgrp++) {
+	for (; *cgrp; cgrp++) {
 		_TC_INFO("[cgroups] configuring %s", (*cgrp)->subsystem);
 
 		// TODO separate this into a function
@@ -114,14 +134,14 @@ abort:
 int
 tc_proc_clean_cgroups(tc_proc_t* proc)
 {
-	tc_proc_cgroup const** cgrp;
+	tc_proc_cgroup const** cgrp = tc_proc_cgroups;
 	char dir[PATH_MAX] = { 0 };
 	char task[PATH_MAX] = { 0 };
 	int task_fd = 0;
 
 	_TC_INFO("cleaning cgroups");
 
-	for (cgrp = tc_proc_cgroups; *cgrp; cgrp++) {
+	for (; *cgrp; cgrp++) {
 		if (snprintf(dir, sizeof(dir), "/sys/fs/cgroup/%s/%s",
 		             (*cgrp)->subsystem, proc->hostname) == -1 ||
 		    snprintf(task, sizeof(task), "/sys/fs/cgroup/%s/tasks",
@@ -129,10 +149,12 @@ tc_proc_clean_cgroups(tc_proc_t* proc)
 			fprintf(stderr, "snprintf failed: %m\n");
 			goto abort;
 		}
+
 		if ((task_fd = open(task, O_WRONLY)) == -1) {
 			fprintf(stderr, "opening %s failed: %m\n", task);
 			goto abort;
 		}
+
 		if (write(task_fd, "0", 2) == -1) {
 			fprintf(stderr, "writing to %s failed: %m\n", task);
 			close(task_fd);
@@ -217,6 +239,7 @@ tc_proc_run(tc_proc_t* proc, int (*child_fn)(void*))
 	_TC_MUST_P_GO(waitpid(proc->child_pid, NULL, 0) != -1, "waitpid", abort,
 	              "failed waiting on child_pid %d", proc->child_pid);
 
+	_TC_DEBUG("child from pid %d just finished.", proc->child_pid);
 	return 0;
 
 abort:
@@ -246,6 +269,10 @@ tc_proc_cleanup(tc_proc_t* proc)
 	if (proc->child_ipc_socket > 0) {
 		close(proc->child_ipc_socket);
 		proc->child_ipc_socket = -1;
+	}
+
+	if (proc->disable_cgroups == false) {
+		tc_proc_clean_cgroups(proc);
 	}
 }
 

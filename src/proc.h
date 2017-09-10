@@ -46,6 +46,9 @@ typedef struct proc_t {
 	// disables userns remapping
 	bool disable_userns_remap;
 
+	// disable cgroups
+	bool disable_cgroups;
+
 	// user id (userns-remap).
 	uid_t uid;
 
@@ -211,5 +214,11 @@ int tc_proc_set_cgroups(tc_proc_t* proc);
  *      sets resource limits for the cloned process.
  */
 int tc_proc_set_rlimits();
+
+/**
+ *      initializes resources regarding IPC between the
+ *      parent process and the child process.
+ */
+int tc_proc_init_ipc(tc_proc_t* proc);
 
 #endif
