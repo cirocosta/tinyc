@@ -17,7 +17,7 @@ tc_proc_init(tc_proc_t* proc)
 		}
 	}
 
-	if (!proc->disable_userns_remap) {
+	if (proc->disable_userns_remap == false) {
 		_TC_MUST_P_GO(
 		  (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets)) == 0,
 		  "socketpair", abort,

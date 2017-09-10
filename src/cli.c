@@ -41,6 +41,11 @@ tc_cli_parse(tc_cli_t* cli, int argc, char** argv)
 			continue;
 		}
 
+		if (!strcmp(current_arg, TC_FLAG_USERNS_REMAP.name)) {
+			cli->userns_remap = true;
+			continue;
+		}
+
 		if (strstr(current_arg, TC_FLAG_ROOTFS.name)) {
 			cli->rootfs = current_arg + TC_FLAG_ROOTFS.name_len + 1;
 			continue;

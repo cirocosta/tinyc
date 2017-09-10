@@ -37,6 +37,7 @@ main(int argc, char** argv)
 	proc.envpc = cli.envc;
 	proc.argv = cli.argv;
 	proc.argc = cli.argc;
+	proc.disable_userns_remap = cli.userns_remap == false;
 
 	tc_names_fill(proc.hostname, 255);
 	tc_proc_show(&proc);
