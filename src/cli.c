@@ -83,8 +83,8 @@ tc_cli_help()
 
 	for (int i = 0; i < tc_cli_flags_len; i++) {
 		flag = tc_cli_flags[i];
-		fprintf(stderr, "    %s\t\t%s\n", flag->name,
-		        flag->description);
+		fprintf(
+		  stderr, "    %s\t\t%s\n", flag->name, flag->description);
 	}
 	fprintf(stderr, "\n");
 	fprintf(stderr, tc_cli_msg_help_footer);

@@ -15,6 +15,7 @@ main(int argc, char** argv)
 	tc_proc_t proc = { 0 };
 	int err = 0;
 
+	// CC:  parses the command line arguments
 	if (tc_cli_parse(&cli, argc, argv)) {
 		tc_cli_help();
 		fprintf(stderr,
@@ -29,16 +30,18 @@ main(int argc, char** argv)
 		exit(0);
 	}
 
+	// CC:  initialize the seed for our random choice of
+	//      container name
 	gettimeofday(&time, NULL);
 	srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
 
-	proc.rootfs = cli.rootfs;
-	proc.envp = cli.envp;
 	proc.envpc = cli.envc;
 	proc.argv = cli.argv;
 	proc.argc = cli.argc;
 	proc.disable_userns_remap = cli.userns_remap == false;
 
+	// CC:  fill the hostname of the process that we'll
+	//      start.
 	tc_names_fill(proc.hostname, 255);
 	tc_proc_show(&proc);
 

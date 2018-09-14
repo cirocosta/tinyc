@@ -56,72 +56,87 @@ typedef struct child_seccomp_mas {
 	struct scmp_arg_cmp cmp;
 } tc_child_seccomp_mask;
 
-static const tc_child_seccomp_mask tc_child_seccomp_masks[] =
-  {
-    {.action = SCMP_ACT_ERRNO(EPERM),
-     .syscall = SCMP_SYS(chmod),
-     1,
-     SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID) },
-    {
-      .action = SCMP_ACT_ERRNO(EPERM),
-      .syscall = SCMP_SYS(chmod),
-      1,
-      SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID),
-    },
-    {.action = SCMP_ACT_ERRNO(EPERM),
-     .syscall = SCMP_SYS(fchmod),
-     1,
-     SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID) },
-    {.action = SCMP_ACT_ERRNO(EPERM),
-     .syscall = SCMP_SYS(fchmod),
-     1,
-     SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID) },
-    {.action = SCMP_ACT_ERRNO(EPERM),
-     .syscall = SCMP_SYS(fchmodat),
-     1,
-     SCMP_A2(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID) },
-    {.action = SCMP_ACT_ERRNO(EPERM),
-     .syscall = SCMP_SYS(fchmodat),
-     1,
-     SCMP_A2(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID) },
-    {.action = SCMP_ACT_ERRNO(EPERM),
-     .syscall = SCMP_SYS(unshare),
-     1,
-     SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER) },
-    {.action = SCMP_ACT_ERRNO(EPERM),
-     .syscall = SCMP_SYS(clone),
-     1,
-     SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER) },
-    {.action = SCMP_ACT_ERRNO(EPERM),
-     .syscall = SCMP_SYS(ioctl),
-     1,
-     SCMP_A1(SCMP_CMP_MASKED_EQ, TIOCSTI, TIOCSTI) },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(keyctl), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(add_key), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(request_key), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM) },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(ptrace), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(mbind), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(migrate_pages), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(move_pages), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(set_mempolicy), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(userfaultfd), 0 },
-    {.action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(perf_event_open), 0 },
-  };
+static const tc_child_seccomp_mask tc_child_seccomp_masks[] = {
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(chmod),
+	  1,
+	  SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID) },
+	{
+	  .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(chmod),
+	  1,
+	  SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID),
+	},
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(fchmod),
+	  1,
+	  SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID) },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(fchmod),
+	  1,
+	  SCMP_A1(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID) },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(fchmodat),
+	  1,
+	  SCMP_A2(SCMP_CMP_MASKED_EQ, S_ISUID, S_ISUID) },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(fchmodat),
+	  1,
+	  SCMP_A2(SCMP_CMP_MASKED_EQ, S_ISGID, S_ISGID) },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(unshare),
+	  1,
+	  SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER) },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(clone),
+	  1,
+	  SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER) },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(ioctl),
+	  1,
+	  SCMP_A1(SCMP_CMP_MASKED_EQ, TIOCSTI, TIOCSTI) },
+	{ .action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(keyctl), 0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(add_key), 0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(request_key),
+	  0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM) },
+	{ .action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(ptrace), 0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(mbind), 0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(migrate_pages),
+	  0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM), .syscall = SCMP_SYS(move_pages), 0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(set_mempolicy),
+	  0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(userfaultfd),
+	  0 },
+	{ .action = SCMP_ACT_ERRNO(EPERM),
+	  .syscall = SCMP_SYS(perf_event_open),
+	  0 },
+};
 
 static const size_t tc_child_seccomp_masks_len =
   sizeof(tc_child_seccomp_masks) / sizeof(*tc_child_seccomp_masks);
 
-int tc_child_mounts(tc_proc_t* config);
+int
+tc_child_mounts(tc_proc_t* config);
 
-int tc_child_capabilities();
+int
+tc_child_capabilities();
 
-int tc_child_main(void* arg);
+int
+tc_child_main(void* arg);
 
-int tc_child_block_syscalls();
+int
+tc_child_block_syscalls();
 
-int tc_child_set_userns(tc_proc_t* config);
+int
+tc_child_set_userns(tc_proc_t* config);
 
-int tc_child_mount_procfs();
+int
+tc_child_mount_procfs();
 
 #endif

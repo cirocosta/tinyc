@@ -47,7 +47,8 @@ test_retrieves_positional_wout_flags()
 	tc_cli_t cli = { 0 };
 	int argc = 2;
 	char* argv[] = {
-		"tinyc", "haha",
+		"tinyc",
+		"haha",
 	};
 	int res = tc_cli_parse(&cli, argc, argv);
 	char* expected = argv[1];
@@ -56,8 +57,10 @@ test_retrieves_positional_wout_flags()
 	_TC_MUST(!res, "should have succeeded");
 	_TC_MUST(cli.argc == 1, "should've captured 1 positional argument");
 
-	_TC_MUST(!strcmp(expected, actual), "strings [%s] and [%s] don't match",
-	         expected, actual);
+	_TC_MUST(!strcmp(expected, actual),
+	         "strings [%s] and [%s] don't match",
+	         expected,
+	         actual);
 	_TC_INFO("OK");
 }
 
@@ -67,7 +70,8 @@ test_retrieves_help_flag()
 	tc_cli_t cli = { 0 };
 	int argc = 2;
 	char* argv[] = {
-		"tinyc", "--help",
+		"tinyc",
+		"--help",
 	};
 	int res = tc_cli_parse(&cli, argc, argv);
 
@@ -84,7 +88,8 @@ test_retrieves_rootfs_flag()
 	tc_cli_t cli = { 0 };
 	int argc = 2;
 	char* argv[] = {
-		"tinyc", "--rootfs=/tmp/rootfs",
+		"tinyc",
+		"--rootfs=/tmp/rootfs",
 	};
 	int res = tc_cli_parse(&cli, argc, argv);
 
@@ -94,8 +99,10 @@ test_retrieves_rootfs_flag()
 	_TC_MUST(!res, "should have succeeded");
 	_TC_MUST(cli.argc == 0, "should've captured 0 positional arguments");
 	_TC_MUST(cli.rootfs != NULL, "should've captured a rootfs arg");
-	_TC_MUST(!strcmp(expected, actual), "strings [%s] and [%s] don't match",
-	         expected, actual);
+	_TC_MUST(!strcmp(expected, actual),
+	         "strings [%s] and [%s] don't match",
+	         expected,
+	         actual);
 
 	_TC_INFO("OK");
 }
@@ -106,7 +113,10 @@ test_retrieves_env_flags()
 	tc_cli_t cli = { 0 };
 	int argc = 4;
 	char* argv[] = {
-		"tinyc", "--env=foo=bar", "--env=caz=baz", "abc",
+		"tinyc",
+		"--env=foo=bar",
+		"--env=caz=baz",
+		"abc",
 	};
 	int res = tc_cli_parse(&cli, argc, argv);
 
@@ -120,13 +130,16 @@ test_retrieves_env_flags()
 	_TC_MUST(cli.rootfs == NULL, "should've captured no rootfs flag");
 
 	_TC_MUST(!strcmp(expected_env1, cli.envp[0]),
-	         "strings [%s] and [%s] don't match", expected_env1,
+	         "strings [%s] and [%s] don't match",
+	         expected_env1,
 	         cli.envp[0]);
 	_TC_MUST(!strcmp(expected_env2, cli.envp[1]),
-	         "strings [%s] and [%s] don't match", expected_env2,
+	         "strings [%s] and [%s] don't match",
+	         expected_env2,
 	         cli.envp[1]);
 	_TC_MUST(!strcmp(expected_pos_arg, cli.argv[0]),
-	         "strings [%s] and [%s] don't match", expected_pos_arg,
+	         "strings [%s] and [%s] don't match",
+	         expected_pos_arg,
 	         cli.argv[0]);
 
 	_TC_INFO("OK");

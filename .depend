@@ -1,2 +1,1 @@
-child.o: src/child.c src/./child.h src/././common.h src/././proc.h \
- src/./././common.h src/././syscall.h
+cli.o: src/cli.c src/./cli.h src/./common.h

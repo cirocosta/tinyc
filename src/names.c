@@ -1,27 +1,31 @@
 #include "./names.h"
 
-static const char* tc_names_left[] =
-  {
-    "admiring",   "adoring",  "affectionate",  "agitated",   "amazing",
-    "angry",      "awesome",  "blissful",      "boring",     "brave",
-    "clever",     "cocky",    "compassionate", "competent",  "condescending",
-    "confident",  "cranky",   "dazzling",      "determined", "distracted",
-    "dreamy",     "eager",    "ecstatic",      "elastic",    "elated",
-    "elegant",    "eloquent", "epic",          "fervent",    "festive",
-    "flamboyant", "focused",  "friendly",      "frosty",     "gallant",
-    "gifted",     "goofy",    "gracious",      "happy",      "hardcore",
-    "heuristic",  "hopeful",  "hungry",        "infallible", "inspiring",
-    "jolly",      "jovial",   "keen",          "kind",       "laughing",
-    "loving",     "lucid",    "mystifying",    "modest",     "musing",
-    "naughty",    "nervous",  "nifty",         "nostalgic",  "objective",
-    "optimistic", "peaceful", "pedantic",      "pensive",    "practical",
-    "priceless",  "quirky",   "quizzical",     "relaxed",    "reverent",
-    "romantic",   "sad",      "serene",        "sharp",      "silly",
-    "sleepy",     "stoic",    "stupefied",     "suspicious", "tender",
-    "thirsty",    "trusting", "unruffled",     "upbeat",     "vibrant",
-    "vigilant",   "vigorous", "wizardly",      "wonderful",  "xenodochial",
-    "youthful",   "zealous",  "zen",
-  };
+static const char* tc_names_left[] = {
+	"admiring",      "adoring",     "affectionate",  "agitated",
+	"amazing",       "angry",       "awesome",       "blissful",
+	"boring",        "brave",       "clever",        "cocky",
+	"compassionate", "competent",   "condescending", "confident",
+	"cranky",        "dazzling",    "determined",    "distracted",
+	"dreamy",        "eager",       "ecstatic",      "elastic",
+	"elated",        "elegant",     "eloquent",      "epic",
+	"fervent",       "festive",     "flamboyant",    "focused",
+	"friendly",      "frosty",      "gallant",       "gifted",
+	"goofy",         "gracious",    "happy",         "hardcore",
+	"heuristic",     "hopeful",     "hungry",        "infallible",
+	"inspiring",     "jolly",       "jovial",        "keen",
+	"kind",          "laughing",    "loving",        "lucid",
+	"mystifying",    "modest",      "musing",        "naughty",
+	"nervous",       "nifty",       "nostalgic",     "objective",
+	"optimistic",    "peaceful",    "pedantic",      "pensive",
+	"practical",     "priceless",   "quirky",        "quizzical",
+	"relaxed",       "reverent",    "romantic",      "sad",
+	"serene",        "sharp",       "silly",         "sleepy",
+	"stoic",         "stupefied",   "suspicious",    "tender",
+	"thirsty",       "trusting",    "unruffled",     "upbeat",
+	"vibrant",       "vigilant",    "vigorous",      "wizardly",
+	"wonderful",     "xenodochial", "youthful",      "zealous",
+	"zen",
+};
 
 static const char* tc_names_right[] =
   { "albattani",   "allen",      "almeida",      "agnesi",        "archimedes",
@@ -67,6 +71,9 @@ tc_names_fill(char* buff, size_t len)
 	int left_ndx = rand() % tc_len_names_left;
 	int right_ndx = rand() % tc_len_names_right;
 
-	return snprintf(buff, len, "%s_%s", tc_names_left[left_ndx],
+	return snprintf(buff,
+	                len,
+	                "%s_%s",
+	                tc_names_left[left_ndx],
 	                tc_names_right[right_ndx]);
 }

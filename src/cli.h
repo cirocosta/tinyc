@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_FLAG_NAME_LEN 256
+#define MAX_FLAG_DESCRIPTION_LEN 256
+
 /**
  *      Final configuration retrieved from the
  *      CLI arguments with the proper type casting
@@ -36,9 +39,9 @@ typedef struct cli_t {
  *              a reference to a value in 'argv'.
  */
 typedef struct cli_flag_t {
-	char name[256];
+	char name[MAX_FLAG_NAME_LEN];
 	int name_len;
-	char description[256];
+	char description[MAX_FLAG_DESCRIPTION_LEN];
 	char* value;
 	int value_len;
 } tc_cli_flag_t;
@@ -76,7 +79,8 @@ static const tc_cli_flag_t TC_FLAG_ENV = {
 /**
  *      Available flags to retrieve values from the 'cli'.
  */
-static const tc_cli_flag_t* tc_cli_flags[] = { &TC_FLAG_HELP, &TC_FLAG_ROOTFS,
+static const tc_cli_flag_t* tc_cli_flags[] = { &TC_FLAG_HELP,
+	                                       &TC_FLAG_ROOTFS,
 	                                       &TC_FLAG_USERNS_REMAP,
 	                                       &TC_FLAG_ENV,
 	                                       &TC_FLAG_PRIVILEGED };
@@ -93,9 +97,8 @@ static const int tc_cli_flags_len =
  *      for help'.
  */
 static const char tc_cli_msg_help_header[] =
-  "\n"
   "TINYC - 0.0.1\n"
-  "Copyright 2017 - Ciro S. Costa <ciro.costa@liferay.com>\n"
+  "Copyright 2017 - Ciro S. Costa <ciro9758@gmail.com>\n"
   "\n"
   "Usage:  tinyc [opts] cmd\n";
 
@@ -119,16 +122,19 @@ static const char tc_cli_msg_help_footer[] =
  *      container the 'tinyc' executable and then the rest
  *      be the actual set of flags and command to execute.
  */
-int tc_cli_parse(tc_cli_t*, int argc, char** argv);
+int
+tc_cli_parse(tc_cli_t*, int argc, char** argv);
 
 /**
  *      Prints to 'stderr' the help message.
  */
-void tc_cli_help();
+void
+tc_cli_help();
 
 /**
  *      Cleans any resources allocated by 'tc_cli_parse'.
  */
-void tc_cli_cleanup(tc_cli_t* cli);
+void
+tc_cli_cleanup(tc_cli_t* cli);
 
 #endif

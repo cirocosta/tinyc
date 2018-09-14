@@ -122,32 +122,36 @@ static const tc_proc_cgroup* tc_proc_cgroups[] =
       .subsystem = "memory",
       .settings =
 	(tc_proc_cgroup_setting* []){
-	  &(tc_proc_cgroup_setting){.name = "memory.limit_in_bytes",
-	                            .value = TC_DEFAULT_CGROUP_MEMORY },
-	  &(tc_proc_cgroup_setting){.name = "memory.kmem.limit_in_bytes",
-	                            .value = TC_DEFAULT_CGROUP_MEMORY },
-	  &(tc_proc_cgroup_setting){.name = "tasks", .value = "0" }, NULL } },
+	  &(tc_proc_cgroup_setting){ .name = "memory.limit_in_bytes",
+	                             .value = TC_DEFAULT_CGROUP_MEMORY },
+	  &(tc_proc_cgroup_setting){ .name = "memory.kmem.limit_in_bytes",
+	                             .value = TC_DEFAULT_CGROUP_MEMORY },
+	  &(tc_proc_cgroup_setting){ .name = "tasks", .value = "0" },
+	  NULL } },
     &(tc_proc_cgroup){
       .subsystem = "cpu",
       .settings =
 	(tc_proc_cgroup_setting* []){
-	  &(tc_proc_cgroup_setting){.name = "cpu.shares",
-	                            .value = TC_DEFAULT_CGROUP_CPU_SHARES },
-	  &(tc_proc_cgroup_setting){.name = "tasks", .value = "0" }, NULL } },
+	  &(tc_proc_cgroup_setting){ .name = "cpu.shares",
+	                             .value = TC_DEFAULT_CGROUP_CPU_SHARES },
+	  &(tc_proc_cgroup_setting){ .name = "tasks", .value = "0" },
+	  NULL } },
     &(tc_proc_cgroup){
       .subsystem = "pids",
       .settings =
 	(tc_proc_cgroup_setting* []){
-	  &(tc_proc_cgroup_setting){.name = "pids.max",
-	                            .value = TC_DEFAULT_CGROUP_PIDS },
-	  &(tc_proc_cgroup_setting){.name = "tasks", .value = "0" }, NULL } },
+	  &(tc_proc_cgroup_setting){ .name = "pids.max",
+	                             .value = TC_DEFAULT_CGROUP_PIDS },
+	  &(tc_proc_cgroup_setting){ .name = "tasks", .value = "0" },
+	  NULL } },
     &(tc_proc_cgroup){
       .subsystem = "blkio",
       .settings =
 	(tc_proc_cgroup_setting* []){
-	  &(tc_proc_cgroup_setting){.name = "blkio.weight",
-	                            .value = TC_DEFAULT_CGROUP_BLKIO_WEIGHT },
-	  &(tc_proc_cgroup_setting){.name = "tasks", .value = "0" }, NULL } },
+	  &(tc_proc_cgroup_setting){ .name = "blkio.weight",
+	                             .value = TC_DEFAULT_CGROUP_BLKIO_WEIGHT },
+	  &(tc_proc_cgroup_setting){ .name = "tasks", .value = "0" },
+	  NULL } },
     NULL };
 
 /**
@@ -164,7 +168,8 @@ static const int tc_proc_flags = CLONE_NEWNS | CLONE_NEWCGROUP | CLONE_NEWPID |
  *      child ipc as well as allocating a stack to
  *      the child proccess.
  */
-int tc_proc_init(tc_proc_t* proc);
+int
+tc_proc_init(tc_proc_t* proc);
 
 /**
  *      runs the child process whose entrypoint is specified
@@ -173,52 +178,61 @@ int tc_proc_init(tc_proc_t* proc);
  *      note.:  must have 'tc_proc_t' properly initialized
  *              before.
  */
-int tc_proc_run(tc_proc_t* proc, int (*fn)(void*));
+int
+tc_proc_run(tc_proc_t* proc, int (*fn)(void*));
 
 /**
  *      handles the userns remapping of the child from the
  *      parent.
  */
-int tc_proc_handle_child_uid_remap(tc_proc_t* proc);
+int
+tc_proc_handle_child_uid_remap(tc_proc_t* proc);
 
 /**
  *      dumps to 'stderr' the configuration that will
  *      be used by the process to be spawned.
  */
-void tc_proc_show(tc_proc_t* proc);
+void
+tc_proc_show(tc_proc_t* proc);
 
 /**
  *      cleans resources that were allocated to 'proc'.
  */
-void tc_proc_cleanup(tc_proc_t* proc);
+void
+tc_proc_cleanup(tc_proc_t* proc);
 
 /**
  *      checks if a directory exists.
  */
-int tc_proc_dir_exists(char* dir);
+int
+tc_proc_dir_exists(char* dir);
 
 /**
  *      cleans the files and directories created in cgroupfs
  *      corresponding to this process (identified by 'hostname').
  */
-int tc_proc_clean_cgroups(tc_proc_t* proc);
+int
+tc_proc_clean_cgroups(tc_proc_t* proc);
 
 /**
  *      sets cgroup configurations by creating the
  *      corresponding group in each desired subsystem
  *      and then setting the values as desired.
  */
-int tc_proc_set_cgroups(tc_proc_t* proc);
+int
+tc_proc_set_cgroups(tc_proc_t* proc);
 
 /**
  *      sets resource limits for the cloned process.
  */
-int tc_proc_set_rlimits();
+int
+tc_proc_set_rlimits();
 
 /**
  *      initializes resources regarding IPC between the
  *      parent process and the child process.
  */
-int tc_proc_init_ipc(tc_proc_t* proc);
+int
+tc_proc_init_ipc(tc_proc_t* proc);
 
 #endif
